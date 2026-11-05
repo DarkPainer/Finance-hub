@@ -446,7 +446,7 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-05 f';
+const APP_VERSION = '2026-11-05 g';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -917,8 +917,9 @@ function renderVinyl(){
   const S = window.VinylCore.summary(HS.row.vinyl);
   if (!S || !S.count) { el.innerHTML = `<div class="d">${esc(Hub.vMsg || 'Reading your Discogs collection…')}</div>`; return; }
   const g = S.genres.filter(x => x.pct != null).sort((a,b) => b.pct - a.pct)[0], dc = S.decades.filter(x => x.pct != null).sort((a,b) => b.pct - a.pct)[0];
-  el.innerHTML = `<div class="row1"><span class="v num">${eurR(S.total)}</span>${S.chg != null ? `<span class="num ${S.chg>=0?'pos2':'neg2'}" style="font-size:13px;font-weight:600">${signR(S.chg)} (${S.chgPct>=0?'+':'−'}${Math.abs(S.chgPct||0).toFixed(1)}%)</span>` : ''}</div>
-    <div style="font-size:12px;color:var(--text-2)">${S.count} records · ${S.pricedCount} priced${S.chg != null ? ' · change this month' : ''}</div>
+  const dv = HS.row.prices && HS.row.prices.vinyl, official = dv && dv.median != null && dv.src !== 'records';
+  el.innerHTML = `<div class="row1"><span class="v num">${eurR(official ? dv.median : S.total)}</span>${S.chgPct != null ? `<span class="num ${S.chg>=0?'pos2':'neg2'}" style="font-size:13px;font-weight:600">${S.chgPct>=0?'+':'−'}${Math.abs(S.chgPct).toFixed(1)}% this month</span>` : ''}</div>
+    <div style="font-size:12px;color:var(--text-2)">${official ? 'Discogs collection value' : 'Sum of record prices'} · ${S.count} records</div>
     <div class="kp"><div><div class="k">Best genre this month</div><div class="x">${g ? esc(g.key) + ` <span class="num ${g.pct>=0?'pos2':'neg2'}" style="font-size:12px">${g.pct>=0?'+':'−'}${Math.abs(g.pct).toFixed(1)}%</span>` : '—'}</div></div>
       <div><div class="k">Best decade this month</div><div class="x">${dc ? esc(dc.key) + ` <span class="num ${dc.pct>=0?'pos2':'neg2'}" style="font-size:12px">${dc.pct>=0?'+':'−'}${Math.abs(dc.pct).toFixed(1)}%</span>` : '—'}</div></div></div>
     <div class="st">${esc(Hub.vMsg || (S.partial ? `Price check in progress: ${S.cursor} of ${S.count}` : 'Prices checked weekly from Discogs'))}</div>`;

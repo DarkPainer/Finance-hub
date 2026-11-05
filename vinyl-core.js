@@ -121,8 +121,11 @@ function summary(v){
     genres: groups('genre'), decades: groups('decade'), months, currency: v.currency || 'EUR', lastFull: v.lastFull, partial: v.partial, cursor: v.cursor, stats: v.stats, error: v.error, log: v.log || [] };
 }
 
-// investing uses the record-by-record total once a full run has priced most of the collection
+// The collection's value comes from Discogs' own collection value (median of actual sales per record).
+// The per-record prices (suggested price for one condition) are for comparing records, genres and decades;
+// their sum is only used when the Discogs collection value isn't available.
 function applyTo(prices, v){
+  if (prices && prices.vinyl && prices.vinyl.median != null && prices.vinyl.src !== 'records') return prices;
   const s = summary(v);
   if (!prices || !s || !s.lastFull || s.pricedCount < s.count * 0.6) return prices;
   const fx = s.currency === 'EUR' ? 1 : (prices.rates && prices.rates[s.currency]) || null;
