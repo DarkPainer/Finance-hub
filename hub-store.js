@@ -3,6 +3,8 @@
 (function(){
 const COLS = 'investing,ledger,overrides,prices,api_keys,bank';
 const COLS_PK = COLS + ',pokemon,pokemon_prices';
+const COLS_ALL = COLS_PK + ',vinyl';
+const VINYL_SQL = 'alter table public.hub add column if not exists vinyl jsonb;';
 const POKEMON_SQL = `alter table public.hub add column if not exists pokemon jsonb;
 alter table public.hub add column if not exists pokemon_prices jsonb;`;
 const LSK = 'fh-hub';
@@ -67,7 +69,7 @@ grant select, insert, update, delete on table public.transactions, public.settin
 const isMissingTable = e => !!e && (e.code === '42P01' || e.code === 'PGRST205' || (e.code === '42501' && /table hub/i.test(e.message||'')) || /could not find the table|relation .*hub.* does not exist/i.test(e.message || ''));
 
 const HubStore = {
-  SETUP_SQL, POKEMON_SQL, row: null, missing: false, pokemonMissing: false, uid: null, sb: null,
+  SETUP_SQL, POKEMON_SQL, VINYL_SQL, row: null, missing: false, pokemonMissing: false, vinylMissing: false, uid: null, sb: null,
   cached(){ try { const c = JSON.parse(localStorage.getItem(LSK) || 'null'); return c && c.uid === this.uid ? c.row : null; } catch(e){ return null; } },
   keep(){ try { localStorage.setItem(LSK, JSON.stringify({uid: this.uid, row: this.row})); } catch(e){} },
   demo: false,
@@ -75,10 +77,12 @@ const HubStore = {
   init(sb, uid){ this.sb = sb; this.uid = uid; this.row = this.cached(); return this.row; },
   async load(){
     if (this.demo) return this.row;
-    let { data, error } = await this.sb.from('hub').select(COLS_PK).maybeSingle();
-    if (error && (error.code === '42703' || /column .*pokemon/i.test(error.message||''))) {   // Pokémon columns not added yet
-      this.pokemonMissing = true; ({ data, error } = await this.sb.from('hub').select(COLS).maybeSingle());
-    } else if (!error) this.pokemonMissing = false;
+    const colErr = e => e && (e.code === '42703' || /column .* does not exist/i.test(e.message||''));
+    let { data, error } = await this.sb.from('hub').select(COLS_ALL).maybeSingle();
+    this.vinylMissing = false;
+    if (colErr(error)) { this.vinylMissing = true; ({ data, error } = await this.sb.from('hub').select(COLS_PK).maybeSingle()); }   // vinyl column not added yet
+    if (colErr(error)) { this.pokemonMissing = true; ({ data, error } = await this.sb.from('hub').select(COLS).maybeSingle()); }    // Pokémon columns not added yet
+    else if (!error) this.pokemonMissing = false;
     if (error) { if (isMissingTable(error)) { this.missing = true; return null; } throw error; }
     this.missing = false;
     this.row = data || { investing:null, ledger:[], overrides:{}, prices:null, api_keys:null, bank:{} };

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vinyl · Finance Hub</title>
+<meta name="theme-color" content="#16243a">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3f0; --surface:#fcfcfb; --surface-2:#efeee9; --line:#e2e0da;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#8a8984;
+  --accent:#2a78d6; --accent-ink:#fff; --good:#0f8a5f; --bad:#c9302c; --warn:#b07400;
+  --hero:#16243a; --hero-ink:#f5f7fb; --hero-2:#aab6c9;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#6250d6; --s7:#8a8984;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05); --r:16px;
+}
+@media (prefers-color-scheme:dark){ :root{
+  color-scheme:dark; --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --line:#2f2f2c;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8d8c85; --accent:#3987e5;
+  --good:#3fbf8a; --bad:#ef6b6a; --warn:#e0a52a; --hero:#1d2c45; --shadow:none;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#9085e9; --s7:#8d8c85; } }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.app{max-width:760px;margin:0 auto;padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+.hero{background:var(--hero);color:var(--hero-ink);padding:calc(12px + env(safe-area-inset-top)) 16px 18px;border-radius:0 0 24px 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top a,.top button{background:rgba(255,255,255,.1);border:0;color:var(--hero-ink);border-radius:999px;padding:8px 14px;text-decoration:none;font-size:14px;cursor:pointer}
+.top h1{font-size:17px;margin:0;font-weight:600}
+.big{text-align:center;margin-top:6px}
+.big .k{color:var(--hero-2);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.big .v{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.big .d{font-size:13px;margin-top:2px}
+.status{color:var(--hero-2);font-size:12px;margin-top:10px;text-align:center;min-height:1.2em}
+.hero .pos{color:#7ee2b0} .hero .neg{color:#ff9aa6}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.sec{margin:14px 12px 0}
+.sec h2{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 8px;display:flex;justify-content:space-between;align-items:center}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:14px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile .k{font-size:12px;color:var(--text-2)} .tile .v{font-size:18px;font-weight:700;margin-top:2px} .tile .s{font-size:12px;color:var(--text-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{border:0;background:none;padding:7px;border-radius:8px;font-weight:600;color:var(--text-2);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.chartbox{position:relative;height:230px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--text-2);margin-bottom:8px}
+.legend span{white-space:nowrap} .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.grow{display:grid;grid-template-columns:12px 1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.grow:first-of-type{border-top:0}
+.grow .dot{width:10px;height:10px;border-radius:3px}
+.grow small{display:block;font-size:12px;color:var(--text-2)}
+.grow .v{text-align:right;font-weight:600}
+.grow .c{text-align:right;font-size:13px;font-weight:600;min-width:62px}
+.tools{display:flex;gap:8px;margin-bottom:6px}
+.tools input,.tools select{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+.tools input{flex:1}
+.rec{border-top:1px solid var(--line)}
+.rec summary{list-style:none;display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 0;cursor:pointer}
+.rec summary::-webkit-details-marker{display:none}
+.rec .t{min-width:0} .rec .t b{display:block;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec .t small{display:block;font-size:12px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rec .r{text-align:right;font-weight:700;white-space:nowrap} .rec .r small{display:block;font-size:12px;font-weight:600}
+.tag{font-size:10px;font-weight:600;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--surface-2);color:var(--text-2);vertical-align:1px}
+.more{padding:0 0 12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;font-size:12px;color:var(--text-2)}
+.more label{display:flex;flex-direction:column;gap:4px}
+.more input{width:130px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:16px}
+.more a{color:var(--accent);text-decoration:none}
+.btn{border:0;border-radius:10px;padding:9px 12px;font-weight:600;background:var(--surface-2);cursor:pointer}
+.note{font-size:12px;color:var(--text-2);margin:8px 2px 0}
+.empty{padding:22px 10px;text-align:center;color:var(--muted);font-size:14px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="top"><a href="./#hub" id="back">‹ Back</a><h1>Vinyl</h1><button id="refresh">Refresh</button></div>
+    <div class="big"><div class="k">Collection value</div><div class="v num" id="bigV">—</div><div class="d num" id="bigD"></div></div>
+    <div class="status" id="status"></div>
+  </header>
+
+  <section class="sec hidden" id="setup"><div class="card" id="setupBody"></div></section>
+
+  <main id="main" class="hidden">
+    <section class="sec"><div class="tiles" id="tiles"></div></section>
+
+    <section class="sec"><h2>Value over time</h2><div class="card">
+      <div class="seg" id="seg"><button data-g="genres" class="on">Genre</button><button data-g="decades">Decade</button></div>
+      <div class="legend" id="legend"></div>
+      <div class="chartbox"><canvas id="cLine"></canvas></div>
+      <p class="note" id="lineNote"></p>
+    </div></section>
+
+    <section class="sec"><h2 id="rankTitle">Genres this month</h2><div class="card" id="rank"></div></section>
+
+    <section class="sec"><h2>Records <span id="recCount" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h2><div class="card">
+      <div class="tools"><input id="q" type="search" placeholder="Search artist or title…"><select id="sort">
+        <option value="value">Most valuable</option><option value="pct">Best this month</option><option value="worst">Worst this month</option><option value="year">Oldest first</option><option value="artist">Artist A–Z</option></select></div>
+      <div id="recs"></div>
+      <p class="note">Prices are Discogs’ suggested price for the condition you recorded (VG+ when none), based on recent sales; “lowest” means the cheapest copy for sale was used. Tap a record to set your own price, e.g. when the Discogs entry isn’t your exact pressing.</p>
+    </div></section>
+  </main>
+</div>
+<script src="chart.umd.js"></script>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const P = window.parent !== window ? window.parent : null;
+if (!P || !P.HubStore || !P.VinylCore) { location.href = './#hub'; return; }
+const HS = P.HubStore, VC = P.VinylCore;
+let cur = 'EUR';
+const money = (v, d = 0) => (cur === 'EUR' ? '€' : cur === 'USD' ? '$' : cur === 'GBP' ? '£' : cur + ' ') + Number(v).toLocaleString('nl-NL', { minimumFractionDigits:d, maximumFractionDigits:d });
+const sign = (v, d = 0) => (v >= 0 ? '+' : '−') + money(Math.abs(v), d);
+const pct = v => v == null ? '' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mLabel = m => m === 'now' ? 'Now' : MON[+m.slice(5)-1] + ' ’' + m.slice(2,4);
+let group = 'genres', chart = null;
+const open = new Set();
+
+$('#back').onclick = e => { e.preventDefault(); P.postMessage('fh-close-invest', location.origin); };
+$('#refresh').onclick = () => { P.postMessage('fh-vinyl-refresh', location.origin); status('Starting a full price check…'); };
+$('#seg').onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; group = b.dataset.g; [...$('#seg').children].forEach(x => x.classList.toggle('on', x === b)); paint(); };
+$('#q').oninput = () => paintRecs(); $('#sort').onchange = () => paintRecs();
+window.addEventListener('message', e => { if (e.origin === location.origin && e.data === 'fh-vinyl-updated') paint(); });
+setInterval(() => { const m = P.Hub && P.Hub.vMsg; if (m) status(m); }, 800);
+function status(t){ $('#status').textContent = t || ''; }
+
+function setup(){
+  const k = (HS.row && HS.row.api_keys) || {};
+  const show = html => { $('#setup').classList.remove('hidden'); $('#main').classList.add('hidden'); $('#setupBody').innerHTML = html; };
+  if (HS.vinylMissing) { show(`<b>One more database column</b><p class="note">In Supabase → SQL Editor, run:</p><pre class="note" style="background:var(--surface-2);padding:8px;border-radius:8px;white-space:pre-wrap">alter table public.hub add column if not exists vinyl jsonb;</pre><p class="note">Then close and reopen the app.</p>`); return true; }
+  if (!k.discogsUser || !k.discogsToken) { show(`<b>Connect Discogs first</b><p class="note">Go to Investing → Settings &amp; backup and fill in your Discogs username and token. Then come back here.</p>`); return true; }
+  return false;
+}
+
+let S = null;
+function paint(){
+  if (setup()) return;
+  const v = HS.row && HS.row.vinyl;
+  S = VC.summary(v);
+  if (!S || !S.count) { $('#setup').classList.remove('hidden'); $('#main').classList.add('hidden'); $('#setupBody').innerHTML = `<div class="empty">${P.Hub && P.Hub.vRunning ? 'Reading your Discogs collection… the first full check takes a few minutes (Discogs allows about one request per second). You can leave this screen; it keeps going.' : 'No vinyl data yet. Tap <b>Refresh</b> to read your Discogs collection.'}</div>`; return; }
+  $('#setup').classList.add('hidden'); $('#main').classList.remove('hidden');
+  cur = S.currency;
+  $('#bigV').textContent = money(S.total);
+  $('#bigD').innerHTML = S.chg != null ? `<span class="${S.chg>=0?'pos':'neg'}">${sign(S.chg)} (${pct(S.chgPct)})</span> this month` : 'Monthly change shows after the next weekly price check';
+  const ago = t => { if (!t) return 'never'; const h = Math.round((Date.now()-t)/36e5); return h < 1 ? 'just now' : h < 48 ? `${h} h ago` : `${Math.round(h/24)} days ago`; };
+  if (!(P.Hub && P.Hub.vMsg)) status(S.partial ? `Price check in progress: ${S.cursor} of ${S.count} records` : `Prices checked ${ago(S.lastFull)} · next check weekly`);
+  const priced = S.rows.filter(r => r.price != null);
+  const top = priced.slice().sort((a,b) => b.price - a.price)[0];
+  const movers = priced.filter(r => r.chgPct != null).sort((a,b) => b.chgPct - a.chgPct);
+  $('#tiles').innerHTML = `
+    <div class="card tile"><div class="k">Records</div><div class="v num">${S.count}</div><div class="s">${S.pricedCount} priced${S.stats && S.stats.lowest ? ` · ${S.stats.lowest} by lowest listing` : ''}</div></div>
+    <div class="card tile"><div class="k">Average per record</div><div class="v num">${money(S.pricedCount ? S.total / S.pricedCount : 0)}</div><div class="s">median ${money(median(priced.map(r=>r.price)))}</div></div>
+    <div class="card tile"><div class="k">Most valuable</div><div class="v num">${top ? money(top.price) : '—'}</div><div class="s">${top ? esc(top.artist + ' – ' + top.title) : ''}</div></div>
+    <div class="card tile"><div class="k">Best this month</div><div class="v num ${movers[0] && movers[0].chgPct>=0?'pos':''}">${movers[0] ? pct(movers[0].chgPct) : '—'}</div><div class="s">${movers[0] ? esc(movers[0].artist + ' – ' + movers[0].title) : 'after the next price check'}</div></div>
+    ${S.error ? `<div class="card tile" style="grid-column:1/-1"><div class="k neg">Discogs said</div><div class="s" style="white-space:normal">${esc(S.error)}</div></div>` : ''}`;
+  paintGroups(); paintRecs();
+}
+const median = a => { if (!a.length) return 0; const s = a.slice().sort((x,y)=>x-y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1]+s[m])/2; };
+
+function paintGroups(){
+  const G = S[group], cols = ['--s1','--s2','--s3','--s4','--s5','--s6'].map(css);
+  let main = G.slice(0, 6); const rest = G.slice(6);
+  if (group === 'decades') main = main.slice().sort((a,b) => a.key.localeCompare(b.key));   // 1960s, 1970s, … in time order
+  const lines = main.map((g, i) => ({ ...g, col: cols[i] }));
+  if (rest.length) lines.push(rest.reduce((o, g) => { o.n += g.n; o.now += g.now; o.base += g.base; o.chg += g.chg; for (const [m, x] of Object.entries(g.series)) o.series[m] = (o.series[m]||0) + x; return o; }, { key:'Other', n:0, now:0, base:0, chg:0, series:{}, col: css('--s7') }));
+  lines.forEach(l => { l.pct = l.base ? l.chg / l.base * 100 : null; });
+  const months = [...S.months, 'now'];
+  $('#legend').innerHTML = lines.map(l => `<span><i style="background:${l.col}"></i>${esc(l.key)}</span>`).join('');
+  if (chart) chart.destroy();
+  Chart.defaults.color = css('--text-2'); Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  chart = new Chart($('#cLine'), { type:'line', data:{ labels: months.map(mLabel), datasets: lines.map(l => ({ label:l.key, data: months.map(m => m === 'now' ? l.now : (l.series[m] ?? null)), borderColor:l.col, backgroundColor:l.col, borderWidth:2, pointRadius:3, tension:.3, spanGaps:true })) },
+    options:{ maintainAspectRatio:false, animation:false, interaction:{mode:'index',intersect:false}, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ` ${c.dataset.label}: ${money(c.parsed.y)}` } } },
+      scales:{ x:{ grid:{display:false} }, y:{ grid:{color:css('--line')}, ticks:{ callback: v => money(v) } } } } });
+  $('#lineNote').textContent = S.months.length < 2 ? 'Discogs has no price history, so each line starts with this month’s snapshot and gains a point every month.' : '';
+  $('#rankTitle').textContent = (group === 'genres' ? 'Genres' : 'Decades') + ' this month';
+  const ranked = lines.slice().sort((a,b) => (b.pct ?? -1e9) - (a.pct ?? -1e9));
+  $('#rank').innerHTML = ranked.map(l => `<div class="grow"><span class="dot" style="background:${l.col}"></span><span>${esc(l.key)}<small>${l.n} record${l.n===1?'':'s'} · ${S.total ? Math.round(l.now / S.total * 100) : 0}% of value</small></span><span class="v num">${money(l.now)}</span><span class="c num ${l.pct==null?'':l.pct>=0?'pos':'neg'}">${l.pct==null?'—':pct(l.pct)}</span></div>`).join('')
+    + (ranked.every(l => l.pct == null) ? '<p class="note">Changes per group appear after the next weekly price check.</p>' : '');
+}
+
+function paintRecs(){
+  if (!S) return;
+  const q = $('#q').value.trim().toLowerCase(), sort = $('#sort').value;
+  let list = S.rows.filter(r => !q || (r.artist + ' ' + r.title).toLowerCase().includes(q));
+  const by = { value:(a,b)=>(b.price??-1)-(a.price??-1), pct:(a,b)=>(b.chgPct??-1e9)-(a.chgPct??-1e9), worst:(a,b)=>(a.chgPct??1e9)-(b.chgPct??1e9), year:(a,b)=>(a.year||9999)-(b.year||9999), artist:(a,b)=>a.artist.localeCompare(b.artist) }[sort];
+  list.sort(by);
+  $('#recCount').textContent = `· ${list.length}`;
+  const ov = (HS.row.vinyl && HS.row.vinyl.overrides) || {};
+  $('#recs').innerHTML = list.slice(0, 300).map(r => `<details class="rec" data-k="${esc(r.key)}"${open.has(r.key)?' open':''}><summary>
+      <span class="t"><b>${esc(r.artist)} – ${esc(r.title)}</b><small>${r.year || '—'} · ${esc(r.genre)}${r.styles[0] ? ' / ' + esc(r.styles[0]) : ''} · ${esc((r.cond || VC.DEFAULT_COND).replace(/^.*\((.+)\)$/, '$1'))}${r.src==='lowest'?'<span class="tag">lowest</span>':''}${r.src==='own'?'<span class="tag">your price</span>':''}</small></span>
+      <span class="r num">${r.price != null ? money(r.price, r.price < 100 ? 2 : 0) : '<span style="color:var(--muted);font-weight:500">no price</span>'}${r.chg != null && Math.abs(r.chg) >= 0.01 ? `<small class="${r.chg>=0?'pos':'neg'}">${sign(r.chg, 2)} · ${pct(r.chgPct)}</small>` : ''}</span>
+    </summary><div class="more">
+      <label>Your own price (${esc(cur)})<input type="number" step="any" inputmode="decimal" data-own="${esc(r.key)}" placeholder="Discogs price" value="${typeof ov[r.key]==='number'?ov[r.key]:''}"></label>
+      <a href="https://www.discogs.com/release/${r.rid}" target="_blank" rel="noopener">Open on Discogs ↗</a>
+      <span>${esc(r.format)}</span>
+    </div></details>`).join('') || '<div class="empty">No records match.</div>';
+}
+document.addEventListener('toggle', e => { const d = e.target; if (d.classList && d.classList.contains('rec')) { if (d.open) open.add(d.dataset.k); else open.delete(d.dataset.k); } }, true);
+$('#recs').addEventListener('change', async e => {
+  const el = e.target.closest('[data-own]'); if (!el) return;
+  const v = { ...(HS.row.vinyl || {}) }; v.overrides = { ...(v.overrides || {}) };
+  const n = parseFloat(el.value.replace(',', '.'));
+  if (el.value.trim() === '' || !isFinite(n)) delete v.overrides[el.dataset.own]; else v.overrides[el.dataset.own] = n;
+  try { await HS.save({ vinyl: v }); } catch(err) { status('Couldn’t save: ' + err.message); }
+  paint(); P.postMessage('fh-vinyl-changed', location.origin);
+});
+paint();
+})();
+</script>
+</body>
+</html>

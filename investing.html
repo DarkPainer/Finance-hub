@@ -202,6 +202,7 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 <script src="chart.umd.js"></script>
 <script src="invest-core.js"></script>
 <script src="hub-store.js"></script>
+<script src="vinyl-core.js"></script>
 <script>
 (async () => {
 const $ = s => document.querySelector(s);
@@ -290,7 +291,7 @@ async function refresh(){
     try { localStorage.setItem('fh-px-attempt', IC.todayKey()); } catch(e){}
     LOG = prices.log || [];
     const patch = { prices };
-    const ev = IC.evaluate(inv, D, prices, HS.row.overrides);
+    const ev = IC.evaluate(inv, D, VinylCore.applyTo(prices, HS.row.vinyl), HS.row.overrides);
     const snap = IC.snapshotIfDue(inv, ev, complete), pos = IC.posSnapIfDue(inv, ev, complete);
     if (snap || pos) patch.investing = { ...inv, ...(snap ? { holdings: [...(inv.holdings||[]), snap] } : {}), ...(pos ? { posSnap: pos } : {}) };
     await HS.save(patch);
@@ -306,7 +307,7 @@ let charts = []; const openRows = new Set();
 document.addEventListener('toggle', e => { const d = e.target; if (d.classList && d.classList.contains('prow')) { if (d.open) openRows.add(d.dataset.k); else openRows.delete(d.dataset.k); } }, true);
 function paint(){
   const inv = HS.row.investing; D = IC.derive(inv, HS.row.ledger);
-  EV = IC.evaluate(inv, D, HS.row.prices, HS.row.overrides);
+  EV = IC.evaluate(inv, D, VinylCore.applyTo(HS.row.prices, HS.row.vinyl), HS.row.overrides);
   if (!LOG.length && HS.row.prices && HS.row.prices.log) LOG = HS.row.prices.log;
   const C = COLORS();
   $('#bigV').textContent = eur(EV.liveTotal);
@@ -329,7 +330,7 @@ function paint(){
   const totalRows = EV.rows.length;
   $('#posTable').innerHTML = EV.rows.map(r => {
     const [short, ...rest] = r.name.split(' · ');
-    const sub = r.cls==='Stocks' && rest.length ? rest.join(' · ') : r.cls==='Crypto' ? 'Crypto' : r.key==='silver' ? `${HS.row.investing.baseline ? D.SILVER_GRAMS : ''} g` : r.key==='cash' ? 'Uninvested' : r.key==='vinyl' ? (r.discogs ? `Discogs median · range ${eur(r.discogs.min)}–${eur(r.discogs.max)}` : (HS.row.api_keys && HS.row.api_keys.discogsUser ? 'Collection estimate' : 'Estimate · connect Discogs in Settings')) : r.cls;
+    const sub = r.cls==='Stocks' && rest.length ? rest.join(' · ') : r.cls==='Crypto' ? 'Crypto' : r.key==='silver' ? `${HS.row.investing.baseline ? D.SILVER_GRAMS : ''} g` : r.key==='cash' ? 'Uninvested' : r.key==='vinyl' ? (HS.row.prices && VinylCore.applyTo(HS.row.prices, HS.row.vinyl).vinyl && VinylCore.applyTo(HS.row.prices, HS.row.vinyl).vinyl.src==='records' ? `Sum of ${VinylCore.applyTo(HS.row.prices, HS.row.vinyl).vinyl.records} records · tap for details` : r.discogs ? `Discogs median · range ${eur(r.discogs.min)}–${eur(r.discogs.max)}` : (HS.row.api_keys && HS.row.api_keys.discogsUser ? 'Collection estimate' : 'Estimate · connect Discogs in Settings')) : r.cls;
     const qty = typeof r.qty==='number' ? `${fmtQty(r.qty)} ${r.key==='silver'?'oz':'×'}` : '';
     const w = r.val!=null && EV.liveTotal ? (r.val/EV.liveTotal*100) : 0;
     const tag = r.manual ? '<span class="ptag man">manual</span>' : r.stale ? '<span class="ptag">saved</span>' : '';
@@ -343,7 +344,7 @@ function paint(){
       </summary>
       <div class="pmore">
         <label>Manual price <span class="tag">(${esc(r.unit)})</span><input class="ovin" data-key="${esc(r.key)}" type="number" step="any" inputmode="decimal" placeholder="live price" value="${typeof ov[r.key]==='number'?ov[r.key]:''}"></label>
-        ${r.key.startsWith('stock:') ? `<button class="btn" data-editstock="${esc(r.key.slice(6))}">Change price source</button>` : ''}
+        ${r.key.startsWith('stock:') ? `<button class="btn" data-editstock="${esc(r.key.slice(6))}">Change price source</button>` : ''}${r.key==='vinyl' && window.parent !== window ? `<button class="btn" id="openVinyl">Open Vinyl details</button>` : ''}
       </div></details>`;
   }).join('') + `<div class="ptotal"><span>Total · ${totalRows} positions</span><span class="num">${eur(EV.liveTotal)}</span></div>`;
   $('#clearOv').classList.toggle('hidden', !Object.keys(ov).length);
@@ -398,6 +399,7 @@ $('#posTable').addEventListener('change', async e => {
   paint();
 });
 $('#posTable').addEventListener('click', e => {
+  if (e.target.closest('#openVinyl')) { parent.postMessage('fh-open-vinyl', location.origin); return; }
   const b = e.target.closest('[data-editstock]'); if (!b) return;
   const s = (HS.row.investing.stockMeta||[]).find(x=>x.sym===b.dataset.editstock); if (!s) return;
   $('#nsSym').value = s.sym; $('#nsName').value = s.name; $('#nsSrc').value = s.src; $('#nsSrc').onchange();

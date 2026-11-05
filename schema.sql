@@ -59,3 +59,6 @@ grant select, insert, update, delete on table public.transactions, public.settin
 -- Added 3 Nov 2026: Pokémon stock (sent by the Pokémon dashboard) and its daily prices.
 alter table public.hub add column if not exists pokemon jsonb;
 alter table public.hub add column if not exists pokemon_prices jsonb;
+
+-- Added 5 Nov 2026: vinyl collection details from Discogs (records, prices, monthly history).
+alter table public.hub add column if not exists vinyl jsonb;

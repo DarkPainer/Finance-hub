@@ -335,6 +335,10 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
       <h2>Investing <a href="investing.html" class="h2link">Open ›</a></h2>
       <a class="card inv" id="invCard" href="investing.html"></a>
     </section>
+    <section class="sec" id="vinylSec">
+      <h2>Vinyl <a href="vinyl.html" class="h2link">Open ›</a></h2>
+      <a class="card pk" id="vinylCard" href="vinyl.html" style="display:block;color:inherit;text-decoration:none"></a>
+    </section>
     <section class="sec">
       <h2>Pokémon stock</h2>
       <div class="card pk" id="pkCard"></div>
@@ -438,10 +442,11 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script src="invest-core.js"></script>
 <script src="hub-store.js"></script>
 <script src="poke-core.js"></script>
+<script src="vinyl-core.js"></script>
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-05 e';
+const APP_VERSION = '2026-11-05 f';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -897,11 +902,26 @@ const signR = v => (v>=0?'+':'−') + eurR(Math.abs(v));
 function investView(){
   const HS = window.HubStore, IC = window.InvestCore;
   if (!HS || !HS.row || !HS.hasInvesting()) return null;
-  try { const inv = HS.row.investing, d = IC.derive(inv, HS.row.ledger); return IC.evaluate(inv, d, HS.row.prices, HS.row.overrides); } catch(e){ console.error(e); return null; }
+  try { const inv = HS.row.investing, d = IC.derive(inv, HS.row.ledger); return IC.evaluate(inv, d, window.VinylCore.applyTo(HS.row.prices, HS.row.vinyl), HS.row.overrides); } catch(e){ console.error(e); return null; }
 }
 function pokeView(){
   const HS = window.HubStore; if (!HS || !HS.row || !HS.row.pokemon || !window.PokeCore) return null;
   try { return window.PokeCore.value(HS.row.pokemon, HS.row.pokemon_prices); } catch(e){ console.error(e); return null; }
+}
+function renderVinyl(){
+  const el = $('#vinylCard'), sec = $('#vinylSec'); if (!el) return;
+  const HS = window.HubStore, k = (HS && HS.row && HS.row.api_keys) || {};
+  sec.classList.toggle('hidden', DEMO);
+  if (HS && HS.vinylMissing) { el.innerHTML = `<div class="d">One more database column is needed for the vinyl details. In Supabase → SQL Editor, run:</div><code>${esc(HS.VINYL_SQL)}</code>`; return; }
+  if (!k.discogsUser || !k.discogsToken) { el.innerHTML = '<div class="d">Connect Discogs (Investing → Settings &amp; backup) to see each record’s value, monthly changes and the best genres and decades.</div>'; return; }
+  const S = window.VinylCore.summary(HS.row.vinyl);
+  if (!S || !S.count) { el.innerHTML = `<div class="d">${esc(Hub.vMsg || 'Reading your Discogs collection…')}</div>`; return; }
+  const g = S.genres.filter(x => x.pct != null).sort((a,b) => b.pct - a.pct)[0], dc = S.decades.filter(x => x.pct != null).sort((a,b) => b.pct - a.pct)[0];
+  el.innerHTML = `<div class="row1"><span class="v num">${eurR(S.total)}</span>${S.chg != null ? `<span class="num ${S.chg>=0?'pos2':'neg2'}" style="font-size:13px;font-weight:600">${signR(S.chg)} (${S.chgPct>=0?'+':'−'}${Math.abs(S.chgPct||0).toFixed(1)}%)</span>` : ''}</div>
+    <div style="font-size:12px;color:var(--text-2)">${S.count} records · ${S.pricedCount} priced${S.chg != null ? ' · change this month' : ''}</div>
+    <div class="kp"><div><div class="k">Best genre this month</div><div class="x">${g ? esc(g.key) + ` <span class="num ${g.pct>=0?'pos2':'neg2'}" style="font-size:12px">${g.pct>=0?'+':'−'}${Math.abs(g.pct).toFixed(1)}%</span>` : '—'}</div></div>
+      <div><div class="k">Best decade this month</div><div class="x">${dc ? esc(dc.key) + ` <span class="num ${dc.pct>=0?'pos2':'neg2'}" style="font-size:12px">${dc.pct>=0?'+':'−'}${Math.abs(dc.pct).toFixed(1)}%</span>` : '—'}</div></div></div>
+    <div class="st">${esc(Hub.vMsg || (S.partial ? `Price check in progress: ${S.cursor} of ${S.count}` : 'Prices checked weekly from Discogs'))}</div>`;
 }
 function renderPokemon(){
   const HS = window.HubStore, el = $('#pkCard'); if (!el) return;
@@ -1010,6 +1030,7 @@ function renderHub(){
       <div style="font-size:11px;color:var(--muted);margin-top:4px">Change per asset since ${esc(ev.lastSnap||'')}, new money left out</div>
       <div class="st" id="pxStatus">${esc(Hub.pxMsg || (p ? `Prices from ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${p.complete?'':' · some missing'}` : 'No prices yet'))}</div>`;
   }
+  renderVinyl();
   renderPokemon();
   $('#hubList').innerHTML = `
     <div class="hubc"><span class="ic">💶</span><div><div class="n">Cash flow</div><div class="d">All-time net: <span class="num">${fmt(T.bal)}</span> · ${state.tx.size} transactions</div></div><span class="pill live">Live</span></div>
@@ -1020,7 +1041,22 @@ function renderHub(){
 }
 // keeps the Hub's investing numbers fresh: load the row, and fetch prices at most once a day
 const Hub = {
-  pxMsg: '', pkMsg: '', running: false, pkRunning: false, started: false,
+  pxMsg: '', pkMsg: '', vMsg: '', running: false, pkRunning: false, vRunning: false, started: false,
+  async maybeVinyl(force){
+    const HS = window.HubStore, VC = window.VinylCore;
+    if (DEMO || this.vRunning || !VC || !HS.row || HS.vinylMissing || !navigator.onLine) return;
+    const k = HS.row.api_keys || {}; if (!k.discogsUser || !k.discogsToken) return;
+    if (!force && !VC.due(HS.row.vinyl)) return;
+    this.vRunning = true;
+    const tell = () => { try { const f = $('#invFrame'); if (f && f.contentWindow) f.contentWindow.postMessage('fh-vinyl-updated', location.origin); } catch(e){} if (state.view==='hub') renderVinyl(); };
+    try {
+      const v = await VC.refresh(k.discogsUser, k.discogsToken, HS.row.vinyl, t => { this.vMsg = t; const el = $('#vinylCard .st'); if (el) el.textContent = t; },
+        async part => { HS.row = { ...HS.row, vinyl: part }; try { await HS.save({ vinyl: part }); } catch(e){} tell(); }, !!force);
+      await HS.save({ vinyl: v });
+    } catch(e) { console.error(e); this.vMsg = 'Discogs: ' + (e.message || e); }
+    if (!/^Discogs:/.test(this.vMsg)) this.vMsg = '';
+    this.vRunning = false; tell(); if (state.view==='hub') renderHub();
+  },
   async maybePricePokemon(){
     if (DEMO) { this.pkMsg = ''; return; }
     const HS = window.HubStore, PC = window.PokeCore;
@@ -1049,7 +1085,7 @@ const Hub = {
     try { const inv = HS.row && HS.row.investing, p = HS.row && HS.row.prices;
       if (inv && p && p.complete && !p.partial) { const IC = window.InvestCore, ev = IC.evaluate(inv, IC.derive(inv, HS.row.ledger), p, HS.row.overrides), pos = IC.posSnapIfDue(inv, ev, true); if (pos) await HS.save({ investing: { ...inv, posSnap: pos } }); } } catch(e) {}
     if (state.view==='hub') renderHub();
-    this.maybeRefresh(); this.maybePricePokemon();
+    this.maybeRefresh(); this.maybePricePokemon(); this.maybeVinyl();
   },
   async maybeRefresh(){
     if (DEMO) return;
@@ -1063,7 +1099,7 @@ const Hub = {
       const { prices, complete } = await IC.fetchPrices(inv, d, HS.row.api_keys, t => { this.pxMsg = 'Updating prices… ' + t; const el = $('#pxStatus'); if (el) el.textContent = this.pxMsg; }, HS.row.prices,
         async part => { HS.row = { ...HS.row, prices: part }; if (state.view==='hub') renderHub(); try { await HS.save({ prices: part }); } catch(e){} });
       try { localStorage.setItem('fh-px-attempt', IC.todayKey()); } catch(e){}
-      const patch = { prices }, ev = IC.evaluate(inv, d, prices, HS.row.overrides), snap = IC.snapshotIfDue(inv, ev, complete), pos = IC.posSnapIfDue(inv, ev, complete);
+      const patch = { prices }, ev = IC.evaluate(inv, d, window.VinylCore.applyTo(prices, HS.row.vinyl), HS.row.overrides), snap = IC.snapshotIfDue(inv, ev, complete), pos = IC.posSnapIfDue(inv, ev, complete);
       if (snap || pos) patch.investing = { ...inv, ...(snap ? { holdings:[...(inv.holdings||[]), snap] } : {}), ...(pos ? { posSnap: pos } : {}) };
       await HS.save(patch);
       try { $('#invFrame').contentWindow && $('#invFrame').contentWindow.postMessage('fh-refresh', location.origin); } catch(e){}
@@ -1075,10 +1111,12 @@ window.Hub = Hub;
 
 // ---------- investing screen, opened on top so the Hub keeps working underneath ----------
 const InvOverlay = {
-  open(){
+  page: null,
+  open(page){
+    page = page || 'investing.html';
     const f = $('#invFrame');
-    if (!f.src) f.src = 'investing.html?embed=1' + (DEMO ? '&demo' : '');
-    else try { f.contentWindow.postMessage('fh-refresh', location.origin); } catch(e){}
+    if (this.page !== page) { this.page = page; f.src = page + '?embed=1' + (DEMO ? '&demo' : ''); }
+    else try { f.contentWindow.postMessage(page === 'vinyl.html' ? 'fh-vinyl-updated' : 'fh-refresh', location.origin); } catch(e){}
     $('#invOverlay').classList.remove('hidden');
     if (!history.state || !history.state.inv) history.pushState({inv:true}, '');
   },
@@ -1090,8 +1128,8 @@ const InvOverlay = {
     if (state.view==='hub') renderHub();
   },
 };
-document.addEventListener('click', e => { const a = e.target.closest('a[href="investing.html"]'); if (!a) return; e.preventDefault(); InvOverlay.open(); });
-window.addEventListener('message', e => { if (e.origin !== location.origin) return; if (e.data === 'fh-close-invest') InvOverlay.close(); if (e.data === 'fh-invest-saved') { try { window.HubStore.load().then(() => state.view==='hub' && renderHub()); } catch(err){} } });
+document.addEventListener('click', e => { const a = e.target.closest('a[href="investing.html"], a[href="vinyl.html"]'); if (!a) return; e.preventDefault(); InvOverlay.open(a.getAttribute('href')); });
+window.addEventListener('message', e => { if (e.origin !== location.origin) return; if (e.data === 'fh-close-invest') InvOverlay.close(); if (e.data === 'fh-open-vinyl') InvOverlay.open('vinyl.html'); if (e.data === 'fh-vinyl-refresh') Hub.maybeVinyl(true); if (e.data === 'fh-vinyl-changed' && state.view==='hub') renderHub(); if (e.data === 'fh-invest-saved') { try { window.HubStore.load().then(() => state.view==='hub' && renderHub()); } catch(err){} } });
 window.addEventListener('popstate', () => InvOverlay.close(true));
 
 // ---------- navigation ----------
