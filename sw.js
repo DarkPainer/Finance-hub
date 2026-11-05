@@ -4,7 +4,7 @@
 //   HTTP cache (GitHub Pages allows 10 minutes) can't hand back an old version.
 // - Large libraries that never change (pdf.js, Chart.js, Supabase client, icons): cache first.
 // - Data calls to Supabase and price APIs: never touched (other origins).
-const CACHE = 'fh-v28';
+const CACHE = 'fh-v29';
 const APP = ['./', 'index.html', 'investing.html', 'invest-core.js', 'hub-store.js', 'poke-core.js', 'demo-data.js', 'vinyl-core.js', 'vinyl.html', 'manifest.webmanifest'];
 const LIBS = ['supabase.js', 'chart.umd.js', 'pdf/pdf.min.mjs', 'pdf/pdf.worker.min.mjs', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'];
 

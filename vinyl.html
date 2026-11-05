@@ -39,7 +39,8 @@ button,select,input{font:inherit;color:inherit}
 .sec{margin:14px 12px 0}
 .sec h2{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 8px;display:flex;justify-content:space-between;align-items:center}
 .card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:14px}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{min-width:0}
 .tile .k{font-size:12px;color:var(--text-2)} .tile .v{font-size:18px;font-weight:700;margin-top:2px} .tile .s{font-size:12px;color:var(--text-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface-2);border-radius:10px;padding:3px;margin-bottom:10px}
 .seg button{border:0;background:none;padding:7px;border-radius:8px;font-weight:600;color:var(--text-2);cursor:pointer}
@@ -147,18 +148,22 @@ function paint(){
   cur = S.currency;
   const dv = HS.row.prices && HS.row.prices.vinyl, official = dv && dv.median != null && dv.src !== 'records';
   if (official) { const save = cur; cur = 'EUR'; $('#bigV').textContent = money(dv.median); cur = save; } else $('#bigV').textContent = money(S.total);
-  $('#bigD').innerHTML = (official ? `Discogs collection value (median)` : `Sum of record prices`) + (S.chgPct != null ? ` · <span class="${S.chg>=0?'pos':'neg'}">${pct(S.chgPct)} this month</span>` : '');
+  $('#bigD').innerHTML = (official ? `Discogs collection value (median)` : `Sum of record prices`) + (S.chgPct != null ? ` · <span class="${S.chg>=0?'pos':'neg'}">${pct(S.chgPct)} this month</span>` : ` · change this month after the next weekly check`);
   const ago = t => { if (!t) return 'never'; const h = Math.round((Date.now()-t)/36e5); return h < 1 ? 'just now' : h < 48 ? `${h} h ago` : `${Math.round(h/24)} days ago`; };
   if (!(P.Hub && P.Hub.vMsg)) status(S.partial ? `Price check in progress: ${S.cursor} of ${S.count} records` : `Prices checked ${ago(S.lastFull)} · next check weekly`);
   const priced = S.rows.filter(r => r.price != null);
   const top = priced.slice().sort((a,b) => b.price - a.price)[0];
-  const movers = priced.filter(r => r.chgPct != null).sort((a,b) => b.chgPct - a.chgPct);
+  const movers = priced.filter(r => r.chgPct != null && Math.abs(r.chg) >= 0.01).sort((a,b) => b.chgPct - a.chgPct);
+  const allLowest = S.src.lowest && !S.src.suggested;
   $('#tiles').innerHTML = `
-    <div class="card tile"><div class="k">Records</div><div class="v num">${S.count}</div><div class="s">${S.pricedCount} priced${S.stats && S.stats.lowest ? ` · ${S.stats.lowest} by lowest listing` : ''}</div></div>
-    <div class="card tile" style="grid-column:1/-1"><div class="k">Record prices added up</div><div class="v num">${money(S.total)}</div><div class="s" style="white-space:normal">Each record at Discogs’ suggested price for its condition (VG+ when not recorded). This is usually lower than Discogs’ collection value, which uses the median of actual sales across all conditions. Used here to compare records, genres and decades.</div></div>
-    <div class="card tile"><div class="k">Average per record</div><div class="v num">${money(S.pricedCount ? S.total / S.pricedCount : 0)}</div><div class="s">median ${money(median(priced.map(r=>r.price)))}</div></div>
+    <div class="card tile"><div class="k">Records</div><div class="v num">${S.count}</div><div class="s">${S.pricedCount} priced</div></div>
+    <div class="card tile"><div class="k">Typical record</div><div class="v num">${money(median(priced.map(r=>r.price)))}</div><div class="s">median · avg ${money(S.pricedCount ? S.total / S.pricedCount : 0)}</div></div>
     <div class="card tile"><div class="k">Most valuable</div><div class="v num">${top ? money(top.price) : '—'}</div><div class="s">${top ? esc(top.artist + ' – ' + top.title) : ''}</div></div>
-    <div class="card tile"><div class="k">Best this month</div><div class="v num ${movers[0] && movers[0].chgPct>=0?'pos':''}">${movers[0] ? pct(movers[0].chgPct) : '—'}</div><div class="s">${movers[0] ? esc(movers[0].artist + ' – ' + movers[0].title) : 'after the next price check'}</div></div>
+    <div class="card tile"><div class="k">Best this month</div><div class="v num ${movers[0] && movers[0].chgPct>0?'pos':''}">${movers[0] ? pct(movers[0].chgPct) : '—'}</div><div class="s">${movers[0] ? esc(movers[0].artist + ' – ' + movers[0].title) : 'after the next weekly check'}</div></div>
+    <div class="card tile" style="grid-column:1/-1"><div class="k">${allLowest ? 'Cheapest copies for sale, added up' : 'Record prices added up'}</div><div class="v num">${money(S.total)}</div><div class="s" style="white-space:normal">${allLowest
+      ? 'Discogs gave no suggested prices, so each record uses the cheapest copy currently for sale (any condition). That’s why it’s far below the collection value. Used only to compare records, genres and decades.'
+      : `${S.src.suggested} records at Discogs’ suggested price for their condition (VG+ when not recorded)${S.src.lowest ? `, ${S.src.lowest} at the cheapest copy for sale` : ''}. Usually lower than the collection value, which uses actual sales across all conditions.`}</div></div>
+    ${S.suggestErr && !S.src.suggested ? `<div class="card tile" style="grid-column:1/-1"><div class="k neg">Why no suggested prices</div><div class="s" style="white-space:normal">${esc(S.suggestErr)}</div></div>` : ''}
     ${S.error ? `<div class="card tile" style="grid-column:1/-1"><div class="k neg">Discogs said</div><div class="s" style="white-space:normal">${esc(S.error)}</div></div>` : ''}`;
   paintGroups(); paintRecs();
 }

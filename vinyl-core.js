@@ -19,8 +19,8 @@ async function dget(path, token, tries = 4){
     try { r = await fetch(API + path, { headers: { Authorization: `Discogs token=${token}` } }); }
     catch(e) { if (a === tries-1) throw new Error('network: ' + e.message); await sleep(3000 * (a+1)); continue; }
     if (r.status === 429 || r.status >= 500) { if (a === tries-1) throw new Error('HTTP ' + r.status); await sleep(6000 * (a+1)); continue; }
-    if (r.status === 404) return null;
     const j = await r.json().catch(() => null);
+    if (r.status === 404) { dget.last404 = (j && j.message) || 'not found'; return null; }
     if (!r.ok) throw new Error((j && j.message) || ('HTTP ' + r.status));
     return j;
   }
@@ -59,7 +59,7 @@ async function refresh(user, token, prev, say, checkpoint, force){
   const v = { releases:{}, prices:{}, history:{}, overrides:{}, ...(prev || {}) };
   v.prices = { ...(v.prices || {}) }; v.history = { ...(v.history || {}) };
   const resuming = !force && v.partial && v.cursor > 0 && v.releases && Object.keys(v.releases).length;
-  if (!resuming) { v.releases = await fetchCollection(user, token, say); v.cursor = 0; v.runStart = Date.now(); v.log = []; v.stats = { suggested:0, lowest:0, none:0, errors:0 }; }
+  if (!resuming) { v.releases = await fetchCollection(user, token, say); v.cursor = 0; v.runStart = Date.now(); v.log = []; v.stats = { suggested:0, lowest:0, none:0, errors:0 }; v.noSuggest = false; v.sugMiss = 0; v.suggestErr = null; }
   v.partial = true;
   const keys = Object.keys(v.releases);
   for (const k of Object.keys(v.prices)) if (!v.releases[k]) delete v.prices[k];          // sold / removed records
@@ -68,9 +68,17 @@ async function refresh(user, token, prev, say, checkpoint, force){
     say && say(`Pricing record ${i+1} of ${keys.length}…`);
     let price = null, src = null;
     try {
-      const s = await dget(`/marketplace/price_suggestions/${r.rid}`, token);
+      let s = null;
+      if (v.noSuggest !== true) {
+        try { s = await dget(`/marketplace/price_suggestions/${r.rid}`, token); }
+        catch(e) { v.suggestErr = e.message; if (/seller|settings|permission|forbidden|422|403/i.test(e.message)) v.noSuggest = true; }
+        if (s === null && !v.suggestErr) v.suggestErr = 'Discogs: ' + (dget.last404 || 'no suggestion');
+        if (s && !Object.keys(s).length && !v.suggestErr) v.suggestErr = 'Discogs returned no suggested prices (check Seller Settings → currency)';
+      }
       const c = s && (s[cond] || s[DEFAULT_COND]);
-      if (c && typeof c.value === 'number' && c.value > 0) { price = c.value; src = 'suggested'; v.currency = c.currency || v.currency; }
+      if (c && typeof c.value === 'number' && c.value > 0) { price = c.value; src = 'suggested'; v.currency = c.currency || v.currency; v.suggestErr = null; v.noSuggest = false; }
+      // after 5 refusals in a row, stop asking for suggestions this run (saves half the requests)
+      if (!c) { v.sugMiss = (v.sugMiss || 0) + 1; if (v.sugMiss >= 5 && !v.stats.suggested) v.noSuggest = true; } else v.sugMiss = 0;
       if (price == null) {
         await sleep(1100);
         const st = await dget(`/marketplace/stats/${r.rid}`, token);
@@ -87,7 +95,7 @@ async function refresh(user, token, prev, say, checkpoint, force){
   if (v.cursor >= keys.length) {
     v.partial = false; v.cursor = 0; v.lastFull = Date.now(); v.error = v.error || null;
     const mk = monthKey();
-    if (!v.history[mk]) v.history[mk] = Object.fromEntries(Object.entries(v.prices).map(([k, x]) => [k, x.p]));
+    if (!v.history[mk]) { v.history[mk] = Object.fromEntries(Object.entries(v.prices).map(([k, x]) => [k, x.p])); v.snapAt = v.snapAt || {}; v.snapAt[mk] = v.lastFull; }
   }
   return v;
 }
@@ -99,7 +107,8 @@ const priceOf = (v, k) => { const o = v.overrides && v.overrides[k]; if (typeof 
 
 function summary(v){
   if (!v || !v.releases) return null;
-  const mk = monthKey(), snap = (v.history || {})[mk] || null;
+  const mk = monthKey(), snapTaken = v.snapAt && v.snapAt[mk];
+  const snap = (v.history || {})[mk] && !(snapTaken && v.lastFull && v.lastFull <= snapTaken) ? v.history[mk] : null;   // same check as the snapshot → nothing to compare yet
   const rows = Object.values(v.releases).map(r => {
     const pr = priceOf(v, r.key), base = snap && snap[r.key];
     const chg = pr && base != null && pr.src !== 'own' ? pr.p - base : null;
@@ -117,7 +126,8 @@ function summary(v){
     for (const m of months) { const h = v.history[m]; for (const r of rows) { const p = h[r.key]; if (p != null) { const G = g[r[field]]; G.series[m] = (G.series[m] || 0) + p; } } }
     return Object.values(g).map(x => ({ ...x, pct: x.base ? x.chg / x.base * 100 : null })).sort((a,b) => b.now - a.now);
   }
-  return { rows, total, count: rows.length, pricedCount: priced.length, chg: withChg.length ? chg : null, chgPct: base ? chg / base * 100 : null, snapMonth: snap ? mk : null,
+  const src = { suggested: priced.filter(r => r.src==='suggested').length, lowest: priced.filter(r => r.src==='lowest').length };
+  return { src, suggestErr: v.suggestErr || null, rows, total, count: rows.length, pricedCount: priced.length, chg: withChg.length ? chg : null, chgPct: base ? chg / base * 100 : null, snapMonth: snap ? mk : null,
     genres: groups('genre'), decades: groups('decade'), months, currency: v.currency || 'EUR', lastFull: v.lastFull, partial: v.partial, cursor: v.cursor, stats: v.stats, error: v.error, log: v.log || [] };
 }
 
