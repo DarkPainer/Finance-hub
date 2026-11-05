@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Investing · Finance Hub</title>
+<meta name="theme-color" content="#16243a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#f4f3f0; --surface:#fcfcfb; --surface-2:#efeee9; --line:#e2e0da;
+  --text:#0b0b0b; --text-2:#52514e; --muted:#8a8984;
+  --accent:#2a78d6; --accent-ink:#fff;
+  --good:#0f8a5f; --bad:#c9302c; --warn:#b07400;
+  --hero:#16243a; --hero-ink:#f5f7fb; --hero-2:#aab6c9;
+  --c-stocks:#2a78d6; --c-crypto:#eb6834; --c-silver:#1baf7a; --c-vinyl:#eda100; --c-invested:#8a8984;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05); --r:16px;
+}
+@media (prefers-color-scheme:dark){ :root:where(:not([data-theme="light"])){
+  color-scheme:dark; --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --line:#2f2f2c;
+  --text:#f0efec; --text-2:#c3c2b7; --muted:#8d8c85; --accent:#3987e5;
+  --good:#3fbf8a; --bad:#ef6b6a; --warn:#e0a52a; --hero:#1d2c45; --shadow:none;
+  --c-stocks:#3987e5; --c-crypto:#d95926; --c-silver:#199e70; --c-vinyl:#c98500; --c-invested:#8d8c85; } }
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.num{font-variant-numeric:tabular-nums}
+.app{max-width:760px;margin:0 auto;padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+.hero{background:var(--hero);color:var(--hero-ink);padding:calc(12px + env(safe-area-inset-top)) 16px 18px;border-radius:0 0 24px 24px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top a,.top button{background:rgba(255,255,255,.1);border:0;color:var(--hero-ink);border-radius:999px;padding:8px 14px;text-decoration:none;font-size:14px}
+.top h1{font-size:17px;margin:0;font-weight:600}
+.status{color:var(--hero-2);font-size:12px;margin-top:10px;text-align:center;min-height:1.2em}
+.big{text-align:center;margin-top:6px}
+.big .k{color:var(--hero-2);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.big .v{font-size:34px;font-weight:700;letter-spacing:-.02em}
+.big .d{font-size:13px;margin-top:2px}
+.pos{color:var(--good)} .neg{color:var(--bad)} .hero .pos{color:#7ee2b0} .hero .neg{color:#ff9aa6}
+.sec{margin:14px 12px 0}
+.sec h2{font-size:13px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 8px}
+.card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:14px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile .k{font-size:12px;color:var(--text-2)} .tile .v{font-size:20px;font-weight:700;margin-top:2px} .tile .s{font-size:12px;color:var(--text-2);margin-top:2px}
+.classes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.cls{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 8px}
+.cls .k{font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:5px} .cls .k i{width:9px;height:9px;border-radius:3px;display:inline-block}
+.cls .v{font-weight:700;font-size:14px;margin-top:2px}
+.note{font-size:12px;color:var(--text-2);margin:2px 0 10px}
+.chartbox{position:relative;height:240px}
+.banner{margin:12px 12px 0;padding:10px 12px;border-radius:12px;font-size:13px;line-height:1.45}
+.banner:empty{display:none}
+.banner.warn{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--text)}
+.banner.err{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+th,td{text-align:right;padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--text-2);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+tfoot td{font-weight:700;border-bottom:0}
+.scroll{overflow-x:auto;margin:0 -14px;padding:0 14px}
+.tag{font-size:11px;color:var(--text-2)} .tag.man{color:var(--warn);font-weight:600}
+.poshead{display:grid;grid-template-columns:1fr 86px 84px;gap:8px;padding:0 0 6px 18px;font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line)}
+.poshead span:not(:first-child){text-align:right}
+.prow{border-bottom:1px solid var(--line)}
+.prow summary{list-style:none;display:grid;grid-template-columns:10px 1fr 86px 84px;gap:8px;align-items:center;padding:10px 0 12px;cursor:pointer;position:relative}
+.prow summary::-webkit-details-marker{display:none}
+.prow summary::before,.prow[open] summary::before{content:none}
+.pdot{width:10px;height:10px;border-radius:3px}
+.pname{min-width:0;line-height:1.25}
+.pname b{font-weight:600;font-size:15px}
+.pname small,.pprice small,.pval small{display:block;font-size:12px;color:var(--text-2);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pprice{text-align:right;font-size:13px;line-height:1.25;white-space:nowrap}
+.pval{text-align:right;font-weight:700;font-size:15px;line-height:1.25}
+.pbar{position:absolute;left:18px;right:0;bottom:4px;height:3px;border-radius:2px;background:var(--surface-2);overflow:hidden}
+.pbar i{display:block;height:100%;border-radius:2px;opacity:.85}
+.ptag{font-size:10px;font-weight:600;margin-left:6px;padding:1px 6px;border-radius:999px;background:var(--surface-2);color:var(--text-2);vertical-align:2px}
+.ptag.man{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.pmore{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:0 0 12px 18px}
+.pmore label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-2)}
+.pmore .ovin{width:140px;font-size:16px;padding:9px}
+.pmore .btn{padding:9px 12px;font-size:14px}
+.ptotal{display:flex;justify-content:space-between;padding:12px 0 2px 18px;font-weight:700}
+.ovin{width:96px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px;color:var(--text);font:inherit;font-size:13px;text-align:right}
+.ovin:not(:placeholder-shown){border-color:var(--warn)}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.form label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em}
+.form input,.form select,textarea{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--text);font:inherit;font-size:16px;width:100%;min-width:0}
+.form .full{grid-column:1/-1}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:600;background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.msg{font-size:13px;min-height:1.2em;margin-top:8px}
+.del{background:none;border:0;color:var(--bad);font-size:18px;padding:0 6px}
+details summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none}
+details summary::before{content:"▸ ";color:var(--muted)} details[open] summary::before{content:"▾ "}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--text-2);white-space:pre-wrap;word-break:break-word}
+.drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--text-2);cursor:pointer}
+.drop input{display:none}
+.hidden{display:none!important}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite;vertical-align:-1px;margin-right:4px}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hero">
+    <div class="top"><a href="./#hub" id="backHub">‹ Hub</a><h1>Investing</h1><button id="refresh">Refresh</button></div>
+    <div class="big"><div class="k">Portfolio value</div><div class="v num" id="bigV">—</div><div class="d num" id="bigD"></div></div>
+    <div class="status" id="status">Loading…</div>
+  </header>
+  <div class="banner" id="banner"></div>
+
+  <!-- setup states -->
+  <section class="sec hidden" id="setupSql"><div class="card">
+    <b>One-time step: set up the investing table</b>
+    <p class="note">In Supabase, open <b>SQL Editor → New query</b>, paste this, and click <b>Run</b>. Then come back and tap “Done”.</p>
+    <textarea id="sqlBox" rows="8" readonly class="mono"></textarea>
+    <div class="row"><button class="btn" id="copySql">Copy SQL</button><button class="btn primary" id="sqlDone">Done</button></div>
+  </div></section>
+  <section class="sec hidden" id="setupImport"><div class="card">
+    <b>Bring over your Investing Dashboard</b>
+    <p class="note">Pick the <b>investing-data.json</b> file Claude sent you. It holds your holdings, history and API keys, and is stored only in your private database.</p>
+    <label class="drop">Choose investing-data.json<input type="file" id="impFile" accept=".json,application/json"></label>
+    <div class="msg" id="impMsg"></div>
+  </div></section>
+
+  <main id="main" class="hidden">
+    <section class="sec"><div class="tiles" id="kpis"></div><div class="classes" id="classes"></div></section>
+
+    <section class="sec"><h2>Value vs money put in</h2><div class="card">
+      <div class="legend"><span><i style="background:var(--c-stocks)"></i>Portfolio value</span><span><i style="background:var(--c-invested)"></i>Cumulative invested</span></div>
+      <div class="chartbox"><canvas id="cTotal"></canvas></div></div></section>
+
+    <section class="sec"><h2>Live positions</h2><div class="card">
+      <div class="poshead"><span>Position</span><span>Price</span><span>Value</span></div>
+      <div id="posTable"></div>
+      <p class="note" style="margin:10px 0 0" id="posNote">Tap a position to set a manual price or change where its price comes from.</p>
+      <div class="row"><button class="btn hidden" id="clearOv">Clear manual prices</button></div>
+    </div></section>
+
+    <section class="sec"><h2>Log a buy or sell</h2><div class="card">
+      <div class="form">
+        <label>Date<input type="date" id="lgDate"></label>
+        <label>Class<select id="lgCls"><option>Stocks</option><option>Crypto</option><option value="Silver">Metal</option><option>Vinyl</option></select></label>
+        <label>Asset<input list="lgAssets" id="lgAsset" autocapitalize="off"><datalist id="lgAssets"></datalist></label>
+        <label id="lgQtyWrap">Quantity<input type="number" step="any" inputmode="decimal" id="lgQty"></label>
+        <label class="full">Amount € (negative when you sell)<input type="number" step="any" inputmode="decimal" id="lgEur" placeholder="what you paid"></label>
+      </div>
+      <div class="row"><button class="btn primary" id="lgAdd">Add entry</button></div>
+      <div class="msg" id="lgMsg"></div>
+      <div class="scroll"><table id="lgTable"></table></div>
+    </div></section>
+
+    <section class="sec"><h2>Per asset class over time</h2><div class="card"><div class="legend" id="lgndA"></div><div class="chartbox"><canvas id="cAssets"></canvas></div></div></section>
+    <section class="sec"><h2>Current allocation</h2><div class="card"><div class="legend" id="lgndB"></div><div class="chartbox"><canvas id="cAlloc"></canvas></div></div></section>
+    <section class="sec"><h2>New money per month</h2><div class="card"><div class="legend" id="lgndC"></div><div class="chartbox"><canvas id="cInvested"></canvas></div></div></section>
+    <section class="sec"><h2>Invested vs value today</h2><div class="card"><div class="legend"><span><i style="background:var(--c-invested)"></i>Invested since Jan</span><span><i style="background:var(--c-stocks)"></i>Value today (class colour)</span></div><div class="chartbox"><canvas id="cCompare"></canvas></div></div></section>
+    <section class="sec"><h2>Monthly market movement</h2><div class="card"><p class="note">Value change between snapshots minus new money = gain or loss from the market.</p><div class="chartbox"><canvas id="cGrowth"></canvas></div></div></section>
+
+    <section class="sec"><div class="card">
+      <details id="nsBox"><summary>Add or change a stock</summary>
+        <p class="note">Add a ticker before you log a trade in it, or type an existing ticker to change where its price comes from (tap <b>Edit</b> next to a stock in Live positions). US listings use Twelve Data (exchange code e.g. XNAS, XNYS); European ones use Alpha Vantage (symbol with suffix e.g. JEDI.DEX, AI.PAR, GDX.LON).</p>
+        <div class="form">
+          <label>Ticker<input id="nsSym" autocapitalize="characters" placeholder="e.g. NVDA"></label>
+          <label>Name<input id="nsName" placeholder="e.g. Nvidia"></label>
+          <label>Price source<select id="nsSrc"><option value="td">US — Twelve Data</option><option value="av">Europe — Alpha Vantage</option></select></label>
+          <label id="nsMicL">Exchange code<input id="nsMic" autocapitalize="characters" placeholder="XNAS"></label>
+          <label>Currency<select id="nsCcy"><option>EUR</option><option>USD</option><option>GBP</option><option>GBp</option></select></label>
+          <label>Fallback price (in that currency)<input id="nsMan" type="number" step="any" inputmode="decimal" placeholder="optional"></label>
+        </div>
+        <div class="row"><button class="btn primary" id="nsAdd">Add stock</button></div><div class="msg" id="nsMsg"></div>
+      </details>
+    </div></section>
+
+    <section class="sec"><div class="card">
+      <details><summary>Settings &amp; backup</summary>
+        <div class="form" style="margin-top:10px">
+          <label class="full">Twelve Data key<input id="kTD" autocomplete="off" autocapitalize="off"></label>
+          <label class="full">Alpha Vantage key<input id="kAV" autocomplete="off" autocapitalize="off"></label>
+        </div>
+        <div class="row"><button class="btn" id="saveKeys">Save keys</button><button class="btn" id="exportBtn">Download backup</button>
+          <label class="btn" style="display:inline-block">Restore backup<input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></label></div>
+        <div class="msg" id="setMsg"></div>
+        <p class="note">Baseline: <span id="baseInfo"></span>. Month-start snapshots are now recorded automatically the first time prices load in a new month.</p>
+      </details>
+    </div></section>
+
+    <section class="sec"><div class="card">
+      <details id="diag"><summary id="diagSum">Diagnostics</summary><div class="scroll"><table id="diagT"></table></div></details>
+    </div></section>
+  </main>
+</div>
+
+<script src="supabase.js"></script>
+<script src="chart.umd.js"></script>
+<script src="invest-core.js"></script>
+<script src="hub-store.js"></script>
+<script>
+(async () => {
+const $ = s => document.querySelector(s);
+const IC = window.InvestCore, HS = window.HubStore;
+const eur = v => '€' + Math.round(v).toLocaleString('nl-NL');
+const sign = v => (v >= 0 ? '+' : '−') + eur(Math.abs(v));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COLORS = () => ({ Crypto:css('--c-crypto'), Stocks:css('--c-stocks'), Vinyl:css('--c-vinyl'), Silver:css('--c-silver') });
+const status = (t, spin) => { $('#status').innerHTML = (spin ? '<span class="spin"></span>' : '') + esc(t); };
+const banner = (html, kind) => { const b = $('#banner'); b.className = 'banner ' + (kind||'warn'); b.innerHTML = html || ''; };
+
+// ---- session (same login as the main app)
+const DEMO = /[?&]demo\b/.test(location.search);
+if (DEMO) {
+  // demo: share the parent's in-memory sample data, never touch a database
+  const parentHS = window.parent !== window && parent.HubStore;
+  if (!parentHS || !parentHS.demo) { location.href = './?demo'; return; }
+  HS.initDemo(parentHS.row);
+  const _save = HS.save.bind(HS); HS.save = async patch => { await _save(patch); parentHS.row = HS.row; };
+} else {
+let cfg = null; try { cfg = JSON.parse(localStorage.getItem('fh-config')||'null'); } catch(e){}
+if (!cfg) { location.href = './'; return; }
+const sb = window.supabase.createClient(cfg.url, cfg.key, {auth:{persistSession:true, autoRefreshToken:true}});
+const { data:{ session } } = await sb.auth.getSession();
+if (!session) { location.href = './'; return; }
+HS.init(sb, session.user.id);
+}
+
+let D = null, EV = null, running = false, LOG = [];
+function show(state){
+  $('#setupSql').classList.toggle('hidden', state!=='sql');
+  $('#setupImport').classList.toggle('hidden', state!=='import');
+  $('#main').classList.toggle('hidden', state!=='main');
+}
+$('#sqlBox').value = HS.SETUP_SQL;
+$('#copySql').onclick = async () => { try { await navigator.clipboard.writeText(HS.SETUP_SQL); $('#copySql').textContent='Copied'; } catch(e){ $('#sqlBox').select(); } };
+$('#sqlDone').onclick = () => boot();
+
+async function boot(){
+  if (HS.hasInvesting()) { show('main'); paint(); }
+  try { await HS.load(); }
+  catch(e){ if (!HS.row) { banner('Couldn’t reach your database: ' + esc(e.message), 'err'); status(''); return; } }
+  if (HS.missing) { show('sql'); status('Setup needed'); return; }
+  if (!HS.hasInvesting()) { show('import'); status('No investing data yet'); return; }
+  const fixed = IC.migrate(HS.row.investing);
+  if (fixed) { try { await HS.save({ investing: fixed, prices: HS.row.prices ? { ...HS.row.prices, partial:true } : null }); } catch(e){} }
+  show('main'); paint();
+  const p = HS.row.prices;
+  let attempted = null; try { attempted = localStorage.getItem('fh-px-attempt'); } catch(e){}
+  const hubBusy = window.parent !== window && parent.Hub && parent.Hub.running;
+  if (hubBusy) status('Prices are updating…', true);
+  else if (!p || p.partial || (p.day !== IC.todayKey() && attempted !== IC.todayKey())) refresh();
+  else status(p ? `Prices from ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${p.complete?'':' · some missing'} · tap Refresh for new quotes` : '');
+}
+
+// ---- import (first run) and restore
+async function importJSON(file, msgEl){
+  try {
+    const j = JSON.parse(await file.text());
+    const patch = HS.fromImportFile(j);
+    patch.investing = IC.migrate(patch.investing) || patch.investing;
+    msgEl.textContent = 'Saving…';
+    await HS.save(patch);
+    msgEl.textContent = 'Imported ✓';
+    show('main'); paint(); refresh();
+  } catch(e){ msgEl.textContent = e.message || String(e); }
+}
+$('#impFile').onchange = e => e.target.files[0] && importJSON(e.target.files[0], $('#impMsg'));
+$('#restoreFile').onchange = e => e.target.files[0] && importJSON(e.target.files[0], $('#setMsg'));
+$('#exportBtn').onclick = () => {
+  const blob = new Blob([JSON.stringify(HS.exportFile(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `investing-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+};
+
+// ---- prices
+async function refresh(){
+  if (DEMO) { status('Demo — sample prices'); return; }
+  if (running || !HS.hasInvesting()) return; running = true;
+  $('#refresh').disabled = true;
+  const inv = HS.row.investing; D = IC.derive(inv, HS.row.ledger);
+  try {
+    const { prices, complete } = await IC.fetchPrices(inv, D, HS.row.api_keys, t => status(t, true), HS.row.prices,
+      async part => { LOG = part.log || []; HS.row = { ...HS.row, prices: part }; paint(); status('Crypto and US prices in — European stocks next…', true); try { await HS.save({ prices: part }); } catch(e){} });
+    try { localStorage.setItem('fh-px-attempt', IC.todayKey()); } catch(e){}
+    LOG = prices.log || [];
+    const patch = { prices };
+    const ev = IC.evaluate(inv, D, prices, HS.row.overrides);
+    const snap = IC.snapshotIfDue(inv, ev, complete), pos = IC.posSnapIfDue(inv, ev, complete);
+    if (snap || pos) patch.investing = { ...inv, ...(snap ? { holdings: [...(inv.holdings||[]), snap] } : {}), ...(pos ? { posSnap: pos } : {}) };
+    await HS.save(patch);
+    if (window.parent !== window) parent.postMessage('fh-invest-saved', location.origin);
+    status(`Updated ${new Date().toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${complete?'':' · some prices missing, see Diagnostics'}${snap?' · monthly snapshot saved':''}`);
+  } catch(e){ status('Price update failed: ' + (e.message||e)); }
+  running = false; $('#refresh').disabled = false; paint();
+}
+$('#refresh').onclick = () => { if (!running) refresh(); };
+
+// ---- render
+let charts = []; const openRows = new Set();
+document.addEventListener('toggle', e => { const d = e.target; if (d.classList && d.classList.contains('prow')) { if (d.open) openRows.add(d.dataset.k); else openRows.delete(d.dataset.k); } }, true);
+function paint(){
+  const inv = HS.row.investing; D = IC.derive(inv, HS.row.ledger);
+  EV = IC.evaluate(inv, D, HS.row.prices, HS.row.overrides);
+  if (!LOG.length && HS.row.prices && HS.row.prices.log) LOG = HS.row.prices.log;
+  const C = COLORS();
+  $('#bigV').textContent = eur(EV.liveTotal);
+  const pct = EV.prevTotal ? (EV.momAbs/EV.prevTotal*100).toFixed(1) : '0.0';
+  $('#bigD').innerHTML = EV.lastSnap ? `<span class="${EV.momAbs>=0?'pos':'neg'}">${sign(EV.momAbs)} (${pct}%)</span> since ${esc(EV.lastSnap)}` : '';
+  const tile = (k,v,s,cls) => `<div class="card tile"><div class="k">${k}</div><div class="v num ${cls||''}">${v}</div><div class="s">${s}</div></div>`;
+  $('#kpis').innerHTML =
+    tile('Portfolio value', eur(EV.liveTotal), EV.lastSnap ? `${sign(EV.momAbs)} vs ${esc(EV.lastSnap)}` : '') +
+    tile('New money invested', eur(EV.totalInvested), 'since ' + esc(EV.firstMonth)) +
+    tile('Market movement', sign(EV.totalGrowth), 'value change excl. deposits', EV.totalGrowth>=0?'pos':'neg') +
+    tile('Biggest mover', esc(EV.best.n), `${sign(EV.best.v)} since ${esc(EV.lastSnap||'')}`);
+  $('#classes').innerHTML = IC.CLASSES.map(c => { const ch = EV.change[c]; return `<div class="cls"><div class="k"><i style="background:${C[c]}"></i>${IC.label(c)}</div><div class="v num">${eur(EV.live[c])}</div><div class="num" style="font-size:11px;font-weight:600;color:${ch.v>=0?'var(--good)':'var(--bad)'}">${sign(ch.v)}${ch.pct!=null?`<br>${ch.pct>=0?'+':'−'}${Math.abs(ch.pct).toFixed(1)}%`:''}</div><div class="tag">${EV.liveTotal?(EV.live[c]/EV.liveTotal*100).toFixed(0):0}% of total</div></div>`; }).join('') + `<div class="tag" style="grid-column:1/-1;margin-top:2px">Change since ${esc(EV.lastSnap||'')}, new money left out.</div>`;
+  const w = [...new Set(EV.warnings)];
+  banner(w.length ? w.map(x => '• ' + esc(x)).join('<br>') : '', 'warn');
+
+  // positions
+  const ov = HS.row.overrides || {};
+  const fmtPx = (v, ccy) => v==null ? '—' : (ccy==='EUR' ? '€' : '') + v.toLocaleString('nl-NL',{maximumFractionDigits: v<10?3:2}) + (ccy && ccy!=='EUR' ? ' ' + ccy.replace('/oz','') : '');
+  const fmtQty = q => typeof q==='number' ? q.toLocaleString('nl-NL',{maximumFractionDigits: q<1?4:q<100?2:0}) : '';
+  const totalRows = EV.rows.length;
+  $('#posTable').innerHTML = EV.rows.map(r => {
+    const [short, ...rest] = r.name.split(' · ');
+    const sub = r.cls==='Stocks' && rest.length ? rest.join(' · ') : r.cls==='Crypto' ? 'Crypto' : r.key==='silver' ? `${HS.row.investing.baseline ? D.SILVER_GRAMS : ''} g` : r.key==='cash' ? 'Uninvested' : r.key==='vinyl' ? 'Collection estimate' : r.cls;
+    const qty = typeof r.qty==='number' ? `${fmtQty(r.qty)} ${r.key==='silver'?'oz':'×'}` : '';
+    const w = r.val!=null && EV.liveTotal ? (r.val/EV.liveTotal*100) : 0;
+    const tag = r.manual ? '<span class="ptag man">manual</span>' : r.stale ? '<span class="ptag">saved</span>' : '';
+    const title = r.key==='silver' ? 'Metal' : r.key==='cash' ? 'DEGIRO cash' : r.key==='vinyl' ? 'Vinyl' : short;
+    return `<details class="prow" data-k="${esc(r.key)}"${openRows.has(r.key)?' open':''}><summary>
+        <span class="pdot" style="background:${C[r.cls]}"></span>
+        <span class="pname"><b>${esc(title)}</b>${tag}<small>${esc(sub)}</small></span>
+        <span class="pprice num">${r.px!=null ? esc(fmtPx(r.px, r.ccy)) : ''}<small>${esc(qty)}</small></span>
+        <span class="pval num">${r.val!=null ? eur(r.val) : '<span class="neg">n/a</span>'}${r.chg!=null && Math.abs(r.chg) >= 0.5 ? `<small style="color:${r.chg>=0?'var(--good)':'var(--bad)'};font-weight:600">${sign(r.chg)}${r.chgPct!=null?` · ${r.chgPct>=0?'+':'−'}${Math.abs(r.chgPct).toFixed(1)}%`:''}</small>` : `<small>${w.toFixed(1)}%</small>`}</span>
+        <span class="pbar"><i style="width:${Math.min(w*2.5,100)}%;background:${C[r.cls]}"></i></span>
+      </summary>
+      <div class="pmore">
+        <label>Manual price <span class="tag">(${esc(r.unit)})</span><input class="ovin" data-key="${esc(r.key)}" type="number" step="any" inputmode="decimal" placeholder="live price" value="${typeof ov[r.key]==='number'?ov[r.key]:''}"></label>
+        ${r.key.startsWith('stock:') ? `<button class="btn" data-editstock="${esc(r.key.slice(6))}">Change price source</button>` : ''}
+      </div></details>`;
+  }).join('') + `<div class="ptotal"><span>Total · ${totalRows} positions</span><span class="num">${eur(EV.liveTotal)}</span></div>`;
+  $('#clearOv').classList.toggle('hidden', !Object.keys(ov).length);
+  const ps = inv.posSnap; $('#posNote').textContent = (ps ? `Green/red under the value: change since ${ps.date} (price movement only, so buys and sells don’t count). ` : '') + 'Tap a position to set a manual price or change where its price comes from.';
+
+  // ledger
+  const L = [...(HS.row.ledger||[])].map((t,i)=>({t,i})).sort((a,b)=> IC.parseDate(b.t.date) - IC.parseDate(a.t.date));
+  $('#lgTable').innerHTML = L.length ? `<thead><tr><th>Date</th><th>Class</th><th>Asset</th><th>Qty</th><th>Amount</th><th></th></tr></thead><tbody>` +
+    L.map(({t,i}) => `<tr><td>${esc(t.date)}</td><td><span style="color:${C[t.cls]}">●</span> ${esc(IC.label(t.cls))}</td><td>${esc(t.asset)}</td><td class="num">${t.qty?Number(t.qty).toLocaleString('nl-NL',{maximumFractionDigits:8}):'—'}</td><td class="num">${eur(Number(t.eur)||0)}</td><td><button class="del" data-del="${i}" aria-label="Delete">×</button></td></tr>`).join('') + '</tbody>'
+    : `<tbody><tr><td class="tag" style="white-space:normal">No trades since the ${esc(inv.baseline.date)} baseline yet.</td></tr></tbody>`;
+  $('#baseInfo').textContent = `${inv.baseline.date} · ${(inv.holdings||[]).length} monthly snapshots`;
+  const k = HS.row.api_keys || {}; if (document.activeElement !== $('#kTD')) $('#kTD').value = k.twelveData || ''; if (document.activeElement !== $('#kAV')) $('#kAV').value = k.alphaVantage || '';
+  syncAsset(false);
+  drawCharts(C);
+  $('#diagSum').textContent = LOG.length ? `Diagnostics — ${LOG.filter(l=>l.ok).length} of ${LOG.length} calls OK` : 'Diagnostics';
+  $('#diagT').innerHTML = LOG.map(l => `<tr><td>${l.ok?'<span class="pos">ok</span>':'<span class="neg">fail</span>'}</td><td style="text-align:left">${esc(l.label)}</td><td style="text-align:left;white-space:normal" class="mono">${esc(l.detail)}</td></tr>`).join('');
+}
+
+function drawCharts(C){
+  charts.forEach(c => c.destroy()); charts = [];
+  const grid = css('--line'), ink = css('--text-2');
+  Chart.defaults.color = ink; Chart.defaults.borderColor = grid; Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  const eurTick = { callback: v => '€' + (Math.abs(v) >= 1000 ? (v/1000)+'k' : v) };
+  const tt = { mode:'index', intersect:false, callbacks:{ label: c => ` ${c.dataset.label}: ${eur(c.parsed.y ?? c.parsed)}` } };
+  const base = { maintainAspectRatio:false, animation:false, interaction:{mode:'index',intersect:false}, plugins:{ legend:{display:false}, tooltip:tt }, scales:{ y:{ ticks:eurTick, grid:{color:grid} }, x:{ grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:6} } } };
+  const bars = { ...base, scales:{ ...base.scales, x:{ ...base.scales.x, offset:true } } };
+  const labels = EV.series.map(h => h.date.replace(' (live)',' · now'));
+  const cumPad = [...EV.cum]; while (cumPad.length < labels.length) cumPad.push(cumPad[cumPad.length-1] ?? 0);
+  // cumulative invested is per month, holdings per snapshot: align by position (as the old dashboard did)
+  charts.push(new Chart($('#cTotal'), { type:'line', data:{ labels, datasets:[
+    { label:'Portfolio value', data:EV.totals, borderColor:C.Stocks, backgroundColor:C.Stocks, borderWidth:2, pointRadius:3, tension:.3 },
+    { label:'Cumulative invested', data:cumPad.slice(-labels.length), borderColor:css('--c-invested'), borderDash:[6,4], borderWidth:2, pointRadius:0, tension:.3 } ]}, options:base }));
+  const leg = cls => cls.map(c => `<span><i style="background:${C[c]}"></i>${IC.label(c)}</span>`).join('');
+  $('#lgndA').innerHTML = leg(IC.CLASSES); $('#lgndB').innerHTML = leg(IC.CLASSES); $('#lgndC').innerHTML = leg(IC.CLASSES);
+  charts.push(new Chart($('#cAssets'), { type:'line', data:{ labels, datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:EV.series.map(h=>h[c]), borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })) }, options:base }));
+  charts.push(new Chart($('#cAlloc'), { type:'doughnut', data:{ labels:IC.CLASSES.map(IC.label), datasets:[{ data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderColor:css('--surface'), borderWidth:2 }] },
+    options:{ maintainAspectRatio:false, animation:false, cutout:'62%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c => ` ${c.label}: ${eur(c.parsed)} (${(c.parsed/EV.liveTotal*100).toFixed(1)}%)` } } } } }));
+  charts.push(new Chart($('#cInvested'), { type:'bar', data:{ labels:D.invested.map(m=>m.month.replace(' 20',' ’')), datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:D.invested.map(m=>m[c]||0), backgroundColor:C[c], borderColor:css('--surface'), borderWidth:{top:2}, borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom' })) },
+    options:{ ...base, scales:{ x:{ stacked:true, offset:true, grid:{display:false}, ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:6} }, y:{ stacked:true, ticks:eurTick, grid:{color:grid} } } } }));
+  charts.push(new Chart($('#cCompare'), { type:'bar', data:{ labels:IC.CLASSES.map(IC.label), datasets:[
+    { label:'Invested since Jan', data:IC.CLASSES.map(c=>D.invested.reduce((s,m)=>s+(m[c]||0),0)), backgroundColor:css('--c-invested'), borderRadius:4 },
+    { label:'Value today', data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderRadius:4 } ] }, options:bars }));
+  charts.push(new Chart($('#cGrowth'), { type:'bar', data:{ labels:EV.glabels.map(s=>s.replace(' (live)',' · now')), datasets:[{ label:'Market gain/loss', data:EV.growth, backgroundColor:EV.growth.map(v=>v>=0?css('--good'):css('--bad')), borderRadius:4 }] }, options:bars }));
+}
+
+// ---- manual prices
+$('#posTable').addEventListener('change', async e => {
+  const el = e.target.closest('.ovin'); if (!el) return;
+  const ov = { ...(HS.row.overrides||{}) }, v = parseFloat(el.value.replace(',','.'));
+  if (el.value.trim()==='' || !isFinite(v)) delete ov[el.dataset.key]; else ov[el.dataset.key] = v;
+  try { await HS.save({ overrides: ov }); } catch(err){ banner('Couldn’t save: ' + esc(err.message), 'err'); }
+  paint();
+});
+$('#posTable').addEventListener('click', e => {
+  const b = e.target.closest('[data-editstock]'); if (!b) return;
+  const s = (HS.row.investing.stockMeta||[]).find(x=>x.sym===b.dataset.editstock); if (!s) return;
+  $('#nsSym').value = s.sym; $('#nsName').value = s.name; $('#nsSrc').value = s.src; $('#nsSrc').onchange();
+  $('#nsMic').value = s.src==='td' ? (s.mic||'') : (s.av||''); $('#nsCcy').value = s.ccy; $('#nsMan').value = s.manual ?? '';
+  $('#nsBox').open = true; $('#nsBox').scrollIntoView({behavior:'smooth', block:'start'}); $('#nsMsg').textContent = 'Change the fields and tap Save.';
+  $('#nsAdd').textContent = 'Save';
+});
+$('#clearOv').onclick = async () => { try { await HS.save({ overrides:{} }); } catch(e){} paint(); };
+
+// ---- ledger form
+function assetsFor(cls){
+  const inv = HS.row.investing;
+  if (cls==='Stocks') return (inv.stockMeta||[]).map(s=>s.sym);
+  if (cls==='Crypto') return [...new Set([...Object.keys(inv.baseline.crypto||{}), ...Object.keys(inv.cryptoLabel||{})])];
+  return [cls.toLowerCase()];
+}
+function syncAsset(reset){
+  const cls = $('#lgCls').value, fixed = cls==='Silver' || cls==='Vinyl';
+  $('#lgAssets').innerHTML = assetsFor(cls).map(a=>`<option value="${esc(a)}">`).join('');
+  if (reset || fixed) $('#lgAsset').value = fixed ? cls.toLowerCase() : '';
+  $('#lgAsset').disabled = fixed;
+  $('#lgAsset').placeholder = cls==='Stocks' ? 'e.g. VST' : cls==='Crypto' ? 'CoinGecko id, e.g. solana' : '';
+  $('#lgQtyWrap').classList.toggle('hidden', cls==='Vinyl');
+  $('#lgQty').placeholder = cls==='Stocks' ? 'shares' : cls==='Crypto' ? 'coins' : 'grams';
+}
+$('#lgCls').onchange = () => syncAsset(true);
+$('#lgDate').value = new Date().toISOString().slice(0,10);
+$('#lgAdd').onclick = async () => {
+  const inv = HS.row.investing, msg = (t, ok) => { $('#lgMsg').innerHTML = `<span class="${ok?'pos':'neg'}">${t}</span>`; };
+  const cls = $('#lgCls').value, date = $('#lgDate').value, asset = $('#lgAsset').value.trim();
+  const qty = cls==='Vinyl' ? 0 : parseFloat($('#lgQty').value), amt = parseFloat($('#lgEur').value);
+  if (!date) return msg('Pick a date.');
+  if (IC.parseDate(date) <= IC.parseDate(inv.baseline.date)) return msg(`That date is on or before the baseline (${esc(inv.baseline.date)}), which already includes it.`);
+  if (!asset) return msg('Name the asset.');
+  if (cls!=='Vinyl' && !isFinite(qty)) return msg('Enter a quantity.');
+  if (!isFinite(amt)) return msg('Enter the amount in euros.');
+  if (cls==='Stocks' && !(inv.stockMeta||[]).some(s=>s.sym===asset)) return msg(`${esc(asset)} isn’t a known stock yet — add it under “Add a new stock” first.`);
+  $('#lgAdd').disabled = true;
+  try { await HS.save({ ledger: [...(HS.row.ledger||[]), { date, cls, asset, qty, eur:amt }] }); $('#lgQty').value=''; $('#lgEur').value=''; msg('Added ✓', true); }
+  catch(e){ msg('Couldn’t save: ' + esc(e.message)); }
+  $('#lgAdd').disabled = false; paint();
+};
+$('#lgTable').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = 'delete?'; setTimeout(()=>{ b.dataset.armed=''; b.textContent='×'; }, 2500); return; }
+  const L = [...(HS.row.ledger||[])]; L.splice(+b.dataset.del, 1);
+  try { await HS.save({ ledger:L }); } catch(err){ banner('Couldn’t delete: ' + esc(err.message), 'err'); }
+  paint();
+});
+
+// ---- add stock
+$('#nsSrc').onchange = () => { const av = $('#nsSrc').value==='av'; $('#nsMicL').firstChild.textContent = av ? 'Alpha Vantage symbol' : 'Exchange code'; $('#nsMic').placeholder = av ? 'e.g. JEDI.DEX' : 'XNAS'; };
+$('#nsAdd').onclick = async () => {
+  const inv = HS.row.investing, sym = $('#nsSym').value.trim().toUpperCase(), name = $('#nsName').value.trim(), src = $('#nsSrc').value, code = $('#nsMic').value.trim(), ccy = $('#nsCcy').value, man = parseFloat($('#nsMan').value);
+  const msg = (t, ok) => { $('#nsMsg').innerHTML = `<span class="${ok?'pos':'neg'}">${t}</span>`; };
+  if (!sym || !name || (!code && $('#nsSrc').value==='av')) return msg('Fill in ticker, name and the Alpha Vantage symbol.');
+  const list = inv.stockMeta||[], idx = list.findIndex(s=>s.sym===sym);
+  const s = { sym, name, src, ccy }; if (src==='td') s.mic = code.toUpperCase(); else s.av = code; if (isFinite(man)) s.manual = man;
+  const next = idx >= 0 ? list.map((x,i)=> i===idx ? s : x) : [...list, s];
+  try { await HS.save({ investing: { ...inv, stockMeta:next } }); msg(idx>=0 ? `${esc(sym)} updated — tap Refresh to fetch its new price.` : `${esc(sym)} added — you can log it now.`, true); ['#nsSym','#nsName','#nsMic','#nsMan'].forEach(x=>$(x).value=''); }
+  catch(e){ msg('Couldn’t save: ' + esc(e.message)); }
+  paint();
+};
+$('#saveKeys').onclick = async () => {
+  try { await HS.save({ api_keys:{ twelveData:$('#kTD').value.trim(), alphaVantage:$('#kAV').value.trim() } }); $('#setMsg').textContent = 'Keys saved ✓'; } catch(e){ $('#setMsg').textContent = e.message; }
+};
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => HS.hasInvesting() && paint());
+
+// opened on top of the Hub: close instead of navigating, and let the Hub do the daily price run
+const EMBED = window.parent !== window;
+if (EMBED) {
+  $('#backHub').addEventListener('click', e => { e.preventDefault(); parent.postMessage('fh-close-invest', location.origin); });
+  window.addEventListener('message', async e => { if (e.origin !== location.origin || e.data !== 'fh-refresh') return; try { await HS.load(); } catch(err){} if (HS.hasInvesting()) { show('main'); paint(); const p = HS.row.prices; if (p && !(parent.Hub && parent.Hub.running)) status(`Prices from ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`); } });
+}
+boot();
+if (!EMBED && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
