@@ -181,7 +181,10 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
         <div class="form" style="margin-top:10px">
           <label class="full">Twelve Data key<input id="kTD" autocomplete="off" autocapitalize="off"></label>
           <label class="full">Alpha Vantage key<input id="kAV" autocomplete="off" autocapitalize="off"></label>
+          <label>Discogs username<input id="kDU" autocomplete="off" autocapitalize="off" placeholder="for your vinyl value"></label>
+          <label>Discogs token<input id="kDT" autocomplete="off" autocapitalize="off" placeholder="personal access token"></label>
         </div>
+        <p class="note" style="margin-top:6px">Discogs token: on discogs.com go to Settings → Developers → <b>Generate new token</b>. The app reads only your collection value, once a day, and uses the median as your vinyl value.</p>
         <div class="row"><button class="btn" id="saveKeys">Save keys</button><button class="btn" id="exportBtn">Download backup</button>
           <label class="btn" style="display:inline-block">Restore backup<input type="file" id="restoreFile" accept=".json,application/json" style="display:none"></label></div>
         <div class="msg" id="setMsg"></div>
@@ -326,7 +329,7 @@ function paint(){
   const totalRows = EV.rows.length;
   $('#posTable').innerHTML = EV.rows.map(r => {
     const [short, ...rest] = r.name.split(' · ');
-    const sub = r.cls==='Stocks' && rest.length ? rest.join(' · ') : r.cls==='Crypto' ? 'Crypto' : r.key==='silver' ? `${HS.row.investing.baseline ? D.SILVER_GRAMS : ''} g` : r.key==='cash' ? 'Uninvested' : r.key==='vinyl' ? 'Collection estimate' : r.cls;
+    const sub = r.cls==='Stocks' && rest.length ? rest.join(' · ') : r.cls==='Crypto' ? 'Crypto' : r.key==='silver' ? `${HS.row.investing.baseline ? D.SILVER_GRAMS : ''} g` : r.key==='cash' ? 'Uninvested' : r.key==='vinyl' ? (r.discogs ? `Discogs median · range ${eur(r.discogs.min)}–${eur(r.discogs.max)}` : (HS.row.api_keys && HS.row.api_keys.discogsUser ? 'Collection estimate' : 'Estimate · connect Discogs in Settings')) : r.cls;
     const qty = typeof r.qty==='number' ? `${fmtQty(r.qty)} ${r.key==='silver'?'oz':'×'}` : '';
     const w = r.val!=null && EV.liveTotal ? (r.val/EV.liveTotal*100) : 0;
     const tag = r.manual ? '<span class="ptag man">manual</span>' : r.stale ? '<span class="ptag">saved</span>' : '';
@@ -352,7 +355,7 @@ function paint(){
     L.map(({t,i}) => `<tr><td>${esc(t.date)}</td><td><span style="color:${C[t.cls]}">●</span> ${esc(IC.label(t.cls))}</td><td>${esc(t.asset)}</td><td class="num">${t.qty?Number(t.qty).toLocaleString('nl-NL',{maximumFractionDigits:8}):'—'}</td><td class="num">${eur(Number(t.eur)||0)}</td><td><button class="del" data-del="${i}" aria-label="Delete">×</button></td></tr>`).join('') + '</tbody>'
     : `<tbody><tr><td class="tag" style="white-space:normal">No trades since the ${esc(inv.baseline.date)} baseline yet.</td></tr></tbody>`;
   $('#baseInfo').textContent = `${inv.baseline.date} · ${(inv.holdings||[]).length} monthly snapshots`;
-  const k = HS.row.api_keys || {}; if (document.activeElement !== $('#kTD')) $('#kTD').value = k.twelveData || ''; if (document.activeElement !== $('#kAV')) $('#kAV').value = k.alphaVantage || '';
+  const k = HS.row.api_keys || {}; if (document.activeElement !== $('#kTD')) $('#kTD').value = k.twelveData || ''; if (document.activeElement !== $('#kAV')) $('#kAV').value = k.alphaVantage || ''; if (document.activeElement !== $('#kDU')) $('#kDU').value = k.discogsUser || ''; if (document.activeElement !== $('#kDT')) $('#kDT').value = k.discogsToken || '';
   syncAsset(false);
   drawCharts(C);
   $('#diagSum').textContent = LOG.length ? `Diagnostics — ${LOG.filter(l=>l.ok).length} of ${LOG.length} calls OK` : 'Diagnostics';
@@ -459,7 +462,9 @@ $('#nsAdd').onclick = async () => {
   paint();
 };
 $('#saveKeys').onclick = async () => {
-  try { await HS.save({ api_keys:{ twelveData:$('#kTD').value.trim(), alphaVantage:$('#kAV').value.trim() } }); $('#setMsg').textContent = 'Keys saved ✓'; } catch(e){ $('#setMsg').textContent = e.message; }
+  const k = { ...(HS.row.api_keys||{}), twelveData:$('#kTD').value.trim(), alphaVantage:$('#kAV').value.trim(), discogsUser:$('#kDU').value.trim().replace(/^.*discogs\.com\/(user\/)?/i,'').replace(/\/.*$/,''), discogsToken:$('#kDT').value.trim() };
+  const newDiscogs = k.discogsUser && k.discogsToken && (k.discogsUser !== (HS.row.api_keys||{}).discogsUser || k.discogsToken !== (HS.row.api_keys||{}).discogsToken);
+  try { await HS.save({ api_keys:k }); $('#setMsg').textContent = newDiscogs ? 'Saved ✓ — fetching your Discogs value…' : 'Keys saved ✓'; if (newDiscogs && !DEMO) refresh(); } catch(e){ $('#setMsg').textContent = e.message; }
 };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => HS.hasInvesting() && paint());
 

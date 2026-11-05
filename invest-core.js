@@ -132,6 +132,23 @@ async function fetchPrices(inv, d, keys, onProgress, prev, onPartial){
     if(q) quotes[s.sym] = q;
   }
 
+  // vinyl: Discogs' own collection value (min / median / max of recent sales)
+  let vinyl = null;
+  if(keys && keys.discogsUser && keys.discogsToken){
+    say("Fetching Discogs collection value…");
+    try{
+      const r = await fetch(`https://api.discogs.com/users/${encodeURIComponent(keys.discogsUser)}/collection/value`, { headers:{ Authorization:`Discogs token=${keys.discogsToken}` } });
+      const j = await r.json().catch(() => null);
+      if(!r.ok) throw new Error((j && j.message) || ("HTTP " + r.status));
+      const num = v => { const t = String(v||''); const ccy = /€/.test(t) ? 'EUR' : /£/.test(t) ? 'GBP' : /\$/.test(t) ? 'USD' : 'EUR'; const n = parseFloat(t.replace(/[^0-9.,]/g,'').replace(/,(?=\d{3}\b)/g,'').replace(',', '.')); return { n, ccy }; };
+      const md = num(j.median), mn = num(j.minimum), mx = num(j.maximum);
+      const fx = c => c === 'EUR' ? 1 : (rates[c] || null);
+      if(isFinite(md.n) && fx(md.ccy)) { vinyl = { median: md.n*fx(md.ccy), min: mn.n*fx(mn.ccy), max: mx.n*fx(mx.ccy), at: Date.now() }; ok("Vinyl (Discogs)", `median ${j.median} · min ${j.minimum} · max ${j.maximum}`); }
+      else fail("Vinyl (Discogs)", "couldn't read the value: " + JSON.stringify(j).slice(0,140));
+    }catch(e){ fail("Vinyl (Discogs)", e.message); feedWarnings.push("Discogs: " + e.message); }
+  }
+  if(!vinyl && prev && prev.vinyl) vinyl = { ...prev.vinyl, stale:true };
+
   const complete = Object.keys(cryptoEur).length === ids.length && Object.keys(quotes).length === d.STOCKS.length && xagUsd != null;
   // keep yesterday's value for anything that failed today, marked as old
   const P = prev || {};
@@ -141,7 +158,7 @@ async function fetchPrices(inv, d, keys, onProgress, prev, onPartial){
   if(rates.USD == null && P.rates && P.rates.USD){ rates.USD = P.rates.USD; rates.GBP = P.rates.GBP; }
   for(const s of d.STOCKS) if(!quotes[s.sym] && typeof s.manual === "number"){ quotes[s.sym] = { price:s.manual, ccy:s.ccy, manual:true }; ok(`${s.sym} (manual price)`, `${s.manual} ${s.ccy}`); }
   const now = new Date();
-  return { prices:{ cryptoEur, quotes, rates, xagUsd, at:Date.now(), day:`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`, complete, log:LOG, feedWarnings }, complete };
+  return { prices:{ cryptoEur, quotes, rates, xagUsd, vinyl, at:Date.now(), day:`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`, complete, log:LOG, feedWarnings }, complete };
 }
 const todayKey = () => { const n = new Date(); return `${n.getFullYear()}-${n.getMonth()+1}-${n.getDate()}`; };
 
@@ -190,8 +207,10 @@ function evaluate(inv, d, prices, ov){
   const silverTotal = silverEurOz != null ? silverEurOz * oz : 0;
   if(silverEurOz == null && d.SILVER_GRAMS) warnings.push("No silver spot price — silver excluded.");
   if(d.SILVER_GRAMS) rows.push({ key:"silver", unit:"USD / troy oz", manual:sMan, cls:"Silver", name:`Silver bullion · ${d.SILVER_GRAMS} g`, qty:+oz.toFixed(3), px:spot, ccy:"USD/oz", val: silverEurOz != null ? silverTotal : null });
-  const vinylVal = typeof ov.vinyl === "number" ? ov.vinyl : (inv.vinylEstimate || 0);
-  rows.push({ key:"vinyl", unit:"EUR total", manual:typeof ov.vinyl === "number", cls:"Vinyl", name:"Vinyl collection", qty:"—", px:null, ccy:"", val:vinylVal });
+  const dv = prices.vinyl;   // Discogs collection value, when connected
+  const vinylVal = typeof ov.vinyl === "number" ? ov.vinyl : (dv && dv.median != null ? dv.median : (inv.vinylEstimate || 0));
+  rows.push({ key:"vinyl", unit:"EUR total", manual:typeof ov.vinyl === "number", stale: !!(dv && dv.stale), cls:"Vinyl", name:"Vinyl collection", qty:"—", px:null, ccy:"", val:vinylVal,
+    discogs: dv && typeof ov.vinyl !== "number" ? { min: dv.min, max: dv.max } : null });
   rows.sort((a,b) => (b.val ?? -1) - (a.val ?? -1));
 
   const live = { Crypto:cryptoTotal, Stocks:stockTotal, Silver:silverTotal, Vinyl:vinylVal };
