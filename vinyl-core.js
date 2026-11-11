@@ -108,7 +108,9 @@ const priceOf = (v, k) => { const o = v.overrides && v.overrides[k]; if (typeof 
 function summary(v){
   if (!v || !v.releases) return null;
   const mk = monthKey(), snapTaken = v.snapAt && v.snapAt[mk];
-  const snap = (v.history || {})[mk] && !(snapTaken && v.lastFull && v.lastFull <= snapTaken) ? v.history[mk] : null;   // same check as the snapshot → nothing to compare yet
+  let snap = (v.history || {})[mk] && !(snapTaken && v.lastFull && v.lastFull <= snapTaken) ? v.history[mk] : null;   // same check as the snapshot → nothing to compare yet
+  // older runs didn't record when the snapshot was taken: if nothing differs from it, there's nothing to compare yet
+  if (snap && !snapTaken && Object.entries(v.prices || {}).every(([k, x]) => snap[k] == null || Math.abs(snap[k] - x.p) < 0.005)) snap = null;
   const rows = Object.values(v.releases).map(r => {
     const pr = priceOf(v, r.key), base = snap && snap[r.key];
     const chg = pr && base != null && pr.src !== 'own' ? pr.p - base : null;
