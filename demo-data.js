@@ -33,6 +33,7 @@ for (const [y, m] of months) {
   add(y, m, 18, 'expense', 'shopping', 25 + rnd()*90, 'Webshop.nl · Order');
   add(y, m, 22, 'expense', 'leisure', 15 + rnd()*40, 'Cinema Plaza · Tickets');
   if (rnd() > .5) add(y, m, 27, 'expense', 'health', 12.5, 'Pharmacy · Drugstore');
+  add(y, m, 26, 'expense', 'savings', 200, 'Own savings account · Transfer to savings');
   add(y, m, 10, 'income', 'pokesale', 80 + rnd()*200, 'Card marketplace · Payout');
 }
 
@@ -78,6 +79,8 @@ const pokemon_prices = { day: todayKey, at: Date.now() - 3600e3, v: 2, sets:{}, 
 const bank = {};
 let bal = 1450;
 months.slice(0, 3).forEach(([y, m]) => { const last = new Date(y, m, 0).getDate(); bal += 180 + Math.round(rnd()*120); bank[`${y}-${pad(m)}-${pad(last)}`] = bal * 100; });
+
+investing.accounts = [{ id: 'a_demo', name: 'Savings', start: 600000, startDate: `${months[0][0]}-${pad(months[0][1])}-01` }];
 
 window.DEMO_DATA = {
   tx,

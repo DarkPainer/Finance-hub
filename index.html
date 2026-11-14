@@ -15,7 +15,7 @@
   --text:#0b0b0b; --text-2:#52514e; --muted:#8a8984;
   --accent:#2a78d6; --accent-ink:#fff;
   --s-in:#1baf7a; --s-out:#eb6834;   /* chart series: income / expenses */
-  --c-stocks:#2a78d6; --c-crypto:#eb6834; --c-silver:#1baf7a; --c-vinyl:#eda100; --c-bank:#6250d6; --c-pokemon:#e87ba4;
+  --c-stocks:#2a78d6; --c-crypto:#eb6834; --c-silver:#1baf7a; --c-vinyl:#eda100; --c-bank:#6250d6; --c-pokemon:#e87ba4; --c-acct:#0f9d9a;
   --good:#0f8a5f; --bad:#c9302c; --warn:#b07400;
   --hero:#16243a; --hero-ink:#f5f7fb; --hero-2:#aab6c9;
   --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.05);
@@ -26,7 +26,7 @@
     color-scheme:dark;
     --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --line:#2f2f2c;
     --text:#f0efec; --text-2:#c3c2b7; --muted:#8d8c85;
-    --accent:#3987e5; --s-in:#199e70; --s-out:#d95926; --c-stocks:#3987e5; --c-crypto:#d95926; --c-silver:#199e70; --c-vinyl:#c98500; --c-bank:#9085e9; --c-pokemon:#d55181;
+    --accent:#3987e5; --s-in:#199e70; --s-out:#d95926; --c-stocks:#3987e5; --c-crypto:#d95926; --c-silver:#199e70; --c-vinyl:#c98500; --c-bank:#9085e9; --c-pokemon:#d55181; --c-acct:#22b8b4;
     --good:#3fbf8a; --bad:#ef6b6a; --warn:#e0a52a;
     --hero:#1d2c45; --shadow:none;
   }
@@ -35,7 +35,7 @@
   color-scheme:dark;
   --bg:#121211; --surface:#1a1a19; --surface-2:#242422; --line:#2f2f2c;
   --text:#f0efec; --text-2:#c3c2b7; --muted:#8d8c85;
-  --accent:#3987e5; --s-in:#199e70; --s-out:#d95926; --c-stocks:#3987e5; --c-crypto:#d95926; --c-silver:#199e70; --c-vinyl:#c98500; --c-bank:#9085e9; --c-pokemon:#d55181;
+  --accent:#3987e5; --s-in:#199e70; --s-out:#d95926; --c-stocks:#3987e5; --c-crypto:#d95926; --c-silver:#199e70; --c-vinyl:#c98500; --c-bank:#9085e9; --c-pokemon:#d55181; --c-acct:#22b8b4;
   --good:#3fbf8a; --bad:#ef6b6a; --warn:#e0a52a;
   --hero:#1d2c45; --shadow:none;
 }
@@ -386,6 +386,17 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
   <div class="row-actions hidden" id="editActions"><button class="btn danger" id="delTx">Delete</button></div>
 </div></div>
 
+<!-- Savings sheet -->
+<div class="scrim" id="sAcct"><div class="sheet">
+  <h3>Savings<button data-close>×</button></h3>
+  <p class="note">Enter your savings balance once, with the date it was correct. After that the app keeps it up to date from your imported statements: money moved to savings is added (category 🏦 To savings), money moved back is subtracted (🏦 From savings). Both count as moving money, not as spending or income.</p>
+  <div class="list"><div class="li" style="grid-template-columns:96px 1fr"><span style="color:var(--text-2)">Name</span><input id="acctName" maxlength="30" placeholder="Savings" aria-label="Name"></div>
+  <div class="li" style="grid-template-columns:96px 1fr"><span style="color:var(--text-2)">Balance €</span><input id="acctBal" inputmode="decimal" placeholder="e.g. 10.000" aria-label="Balance"></div>
+  <div class="li" style="grid-template-columns:96px 1fr"><span style="color:var(--text-2)">Correct on</span><input id="acctDate" type="date" aria-label="Date the balance was correct"></div></div>
+  <div class="note" id="acctInfo"></div>
+  <div class="row-actions"><button class="btn danger hidden" id="acctDel">Remove</button><button class="btn primary" id="acctSave">Save</button></div>
+</div></div>
+
 <!-- Categories sheet -->
 <div class="scrim" id="sCats"><div class="sheet">
   <h3>Categories<button data-close>×</button></h3>
@@ -446,7 +457,7 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-11 a';
+const APP_VERSION = '2026-11-14 a';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -481,6 +492,8 @@ const DEFAULT_CATS = [
   {id:'pokesale',name:'Pokémon sales',icon:'🃏',type:'income'},
   {id:'refund',name:'Refunds',icon:'↩️',type:'income'},
   {id:'otherin',name:'Other income',icon:'💰',type:'income'},
+  {id:'savings',name:'To savings',icon:'🏦',type:'expense',transfer:true},
+  {id:'savingsin',name:'From savings',icon:'🏦',type:'income',transfer:true},
 ];
 const DEFAULT_RULES = {
   'albert heijn':'groceries','ah to go':'groceries','jumbo':'groceries','lidl':'groceries','aldi':'groceries','plus ':'groceries','dirk':'groceries','picnic':'groceries','ekoplaza':'groceries','spar':'groceries',
@@ -496,7 +509,15 @@ const DEFAULT_RULES = {
   'cardmarket':'other','pokemon center':'pokemon','vinted':'pokesale',
   'degiro':'invest','trade republic':'invest','bux':'invest','meesman':'invest','bitvavo':'invest',
   'salaris':'salary','loon':'salary',
+  'spaarrekening':'savings','spaarrek':'savings','rabo spaar':'savings','doelspaar':'savings','bonusspaar':'savings','internetsparen':'savings','spaardeposito':'savings',
 };
+// a savings transfer goes both ways: a rule for one direction also covers the other
+const PAIR = { savings:'savingsin', savingsin:'savings' };
+function ensureCats(){   // add the savings categories to category lists saved before they existed (once per device)
+  if (LS.get('fh-savcats', false)) return false; let add = false;
+  for (const d of DEFAULT_CATS.filter(c => PAIR[c.id])) if (!state.cats.some(c => c.id === d.id)) { state.cats.push({...d}); add = true; }
+  LS.set('fh-savcats', true); return add;
+}
 
 const state = {
   tx: new Map(), cats: DEFAULT_CATS.map(c=>({...c})), rules: {...DEFAULT_RULES},
@@ -575,6 +596,7 @@ const Store = {
       state.tx = new Map(all.map(r => [r.id, {...r, amount: Number(r.amount), created: Number(r.created)||0}]));
       if (s && Array.isArray(s.categories) && s.categories.length) state.cats = s.categories;
       if (s && s.rules) state.rules = {...DEFAULT_RULES, ...s.rules};
+      if (s && ensureCats()) this.enqueue({op:'settings'});
       this.saveCache(); this.status(''); render(); fillCatFilter();
     } catch(e) {
       if (isAuthErr(e)) return Gate.show('login', 'Please sign in again.');
@@ -965,17 +987,18 @@ function nwSeries(ev, pv){
   const pkSnap = {}; for (const [m, v] of Object.entries(pkHist)) pkSnap[addMonths(m, -1)] = v;
   const months = Object.keys(bankByMonth).sort();
   const now = monthKey(new Date());
-  for (const m of months) if (m < now) out.push({ m, label: monthName(m,{month:'short'}), bank: bankByMonth[m], inv: invSnap[m] ?? null, pk: pkSnap[m] ?? null });
+  const acc = m => { const v = acctList().map(a => acctAt(a, m)).filter(x => x != null); return v.length ? v.reduce((a,b)=>a+b,0) : null; };
+  for (const m of months) if (m < now) out.push({ m, label: monthName(m,{month:'short'}), bank: bankByMonth[m], acct: acc(m), inv: invSnap[m] ?? null, pk: pkSnap[m] ?? null });
   const lb = HS && HS.latestBank ? HS.latestBank() : null;
-  out.push({ m: 'now', label: 'Now', bank: lb ? lb.cents/100 : null, inv: ev ? { Stocks:ev.live.Stocks, Crypto:ev.live.Crypto, Silver:ev.live.Silver, Vinyl:ev.live.Vinyl } : null, pk: pv ? pv.market : null });
+  out.push({ m: 'now', label: 'Now', bank: lb ? lb.cents/100 : null, acct: acc('now'), inv: ev ? { Stocks:ev.live.Stocks, Crypto:ev.live.Crypto, Silver:ev.live.Silver, Vinyl:ev.live.Vinyl } : null, pk: pv ? pv.market : null });
   return out.slice(-12);
 }
 function drawNW(series){
   if (series.length < 2) return '<div class="note" style="margin-top:10px">The chart fills in as you import more statements: one bar per month, built from that month’s closing bank balance plus your investments and Pokémon at the turn of the month.</div>';
   const W = 520, H = 170, pl = 40, pr = 6, pt = 18, pb = 22;
   const invSum = d => d.inv ? Object.values(d.inv).reduce((a,b)=>a+b,0) : 0;
-  const tot = d => (d.bank||0) + invSum(d) + (d.pk||0);
-  const PARTS = [['Rabobank', d => d.bank, 'var(--c-bank)'], ['Stocks', d => d.inv && d.inv.Stocks, 'var(--c-stocks)'], ['Crypto', d => d.inv && d.inv.Crypto, 'var(--c-crypto)'], ['Metal', d => d.inv && d.inv.Silver, 'var(--c-silver)'], ['Vinyl', d => d.inv && d.inv.Vinyl, 'var(--c-vinyl)'], ['Pokémon', d => d.pk, 'var(--c-pokemon)']];
+  const tot = d => (d.bank||0) + (d.acct||0) + invSum(d) + (d.pk||0);
+  const PARTS = [['Rabobank', d => d.bank, 'var(--c-bank)'], ['Savings', d => d.acct, 'var(--c-acct)'], ['Stocks', d => d.inv && d.inv.Stocks, 'var(--c-stocks)'], ['Crypto', d => d.inv && d.inv.Crypto, 'var(--c-crypto)'], ['Metal', d => d.inv && d.inv.Silver, 'var(--c-silver)'], ['Vinyl', d => d.inv && d.inv.Vinyl, 'var(--c-vinyl)'], ['Pokémon', d => d.pk, 'var(--c-pokemon)']];
   const max = Math.max(1, ...series.map(tot)); const step = niceStep(max/3); const top = Math.ceil(max/step)*step;
   const y = v => pt + (H-pt-pb) * (1 - v/top);
   const gw = (W-pl-pr)/series.length, bw = Math.min(46, gw*0.62);
@@ -996,16 +1019,40 @@ function drawNW(series){
     <div class="legend" style="padding:0;margin-top:2px">${PARTS.filter(([n, f]) => series.some(d => (f(d)||0) > 0)).map(([n, f, col]) => `<span><i style="background:${col}"></i>${n}</span>`).join('')}</div>
     ${anyMissing ? '<div class="note" style="margin-top:4px">* not every part had a snapshot that month</div>' : ''}`;
 }
+// savings: one starting balance + date (investing.accounts[0]); kept up to date from imported transfers to/from savings
+const acctList = () => { const HS = window.HubStore; return (HS && HS.row && HS.row.investing && HS.row.investing.accounts) || []; };
+const savFlow = t => t.cat === 'savings' ? t.amount : t.cat === 'savingsin' ? -t.amount : 0;   // cents, + = into savings
+function acctBal(a, upto){   // balance at the end of day `upto` (YYYY-MM-DD), or now; works backwards for dates before the start
+  if (!a || a.start == null) return null; let v = a.start;
+  for (const t of state.tx.values()) { const f = savFlow(t); if (!f) continue;
+    if (t.date > a.startDate && (!upto || t.date <= upto)) v += f;
+    else if (upto && t.date > upto && t.date <= a.startDate) v -= f; }
+  return v / 100;
+}
+const acctAt = (a, m) => acctBal(a, m === 'now' ? null : isoDate(new Date(+m.slice(0,4), +m.slice(5,7), 0)));
+function acctMoves(a){ let n = 0, net = 0; for (const t of state.tx.values()) { const f = savFlow(t); if (f && t.date > a.startDate) { n++; net += f; } } return { n, net }; }
+function openAcct(){
+  const a = acctList()[0];
+  $('#acctName').value = a ? a.name : 'Savings';
+  $('#acctBal').value = a ? String(acctBal(a)).replace('.', ',') : '';
+  $('#acctDate').value = isoDate(new Date());
+  $('#acctDel').classList.toggle('hidden', !a);
+  if (a) { const mv = acctMoves(a);
+    $('#acctInfo').innerHTML = `Started at ${eurR(a.start/100)} on ${new Date(a.startDate+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}. Since then: ${mv.n} transfer${mv.n===1?'':'s'}, ${mv.net>=0?'+':'−'}${eurR(Math.abs(mv.net)/100)}. Interest isn't on your statement; when your savings app shows a different balance, enter it here with today's date to correct it.`;
+  } else $('#acctInfo').textContent = '';
+  $('#sAcct').classList.add('open');
+}
 function renderHub(){
   const HS = window.HubStore, T = totals([...state.tx.values()]);
   const ev = investView(), bank = HS && HS.row ? HS.latestBank() : null;
   // net worth
   const nw = $('#nwCard');
   if (HS && HS.missing) nw.innerHTML = `<div class="d">One-time setup needed for net worth and investing.</div><a class="btn primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="investing.html">Set it up</a>`;
-  else if (!ev && !bank && !pokeView()) nw.innerHTML = `<div class="empty" style="padding:6px">Import a Rabobank statement and your investing data to see your net worth.</div>`;
+  else if (!ev && !bank && !pokeView() && !acctList().length) nw.innerHTML = `<div class="empty" style="padding:6px">Import a Rabobank statement and your investing data to see your net worth.</div>`;
   else {
     const parts = [];
     if (bank) parts.push(['Rabobank', bank.cents/100, 'var(--c-bank)', `as of ${new Date(bank.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`]);
+    for (const a of acctList()) parts.push([a.name, acctBal(a), 'var(--c-acct)', 'from transfers']);
     if (ev) for (const c of ['Stocks','Crypto','Silver','Vinyl']) if (ev.live[c]) parts.push([window.InvestCore.label(c), ev.live[c], CLS_COL[c], '']);
     const pv = pokeView(); if (pv) parts.push(['Pokémon', pv.market, 'var(--c-pokemon)', 'market value']);
     const total = parts.reduce((s,p)=>s+p[1],0), pos = parts.filter(p=>p[1]>0), posSum = pos.reduce((s,p)=>s+p[1],0) || 1;
@@ -1013,7 +1060,9 @@ function renderHub(){
       <div class="stack">${pos.map(p=>`<i style="width:${p[1]/posSum*100}%;background:${p[2]}" title="${esc(p[0])}"></i>`).join('')}</div>
       <div class="lines">${parts.map(p=>`<div class="ln"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${p[2]};margin-right:6px"></i>${esc(p[0])}${p[3]?` <span style="font-size:11px;color:var(--muted)">${esc(p[3])}</span>`:''}</span><span class="num">${eurR(p[1])}</span></div>`).join('')}</div>
       ${!bank ? '<div class="note" style="margin-top:8px">Import a Rabobank PDF to add your bank balance.</div>' : ''}${!ev ? '<div class="note" style="margin-top:8px">Add your investing data to include investments.</div>' : ''}
+      <button class="btn" id="acctOpen" style="margin-top:10px;width:100%">${acctList().length ? 'Savings settings' : '+ Add your savings'}</button>
       ${bank ? drawNW(nwSeries(ev, pokeView())) : ''}`;
+    const ao = $('#acctOpen'); if (ao) ao.onclick = openAcct;
   }
   // investing KPIs
   const ic = $('#invCard');
@@ -1405,7 +1454,7 @@ function makeItem(date, amt, name, desc, existing, seen){
   const key0 = `${date}|${amt}|${text.toLowerCase().slice(0,80)}`;
   const n = (seen.get(key0)||0)+1; seen.set(key0,n);
   const h = hash(key0+'|'+n);
-  let cat = categorize(text); if (cat && catById(cat).type!==type) cat = null;
+  let cat = categorize(text); if (cat && catById(cat).type!==type) cat = (PAIR[cat] && state.cats.some(c=>c.id===PAIR[cat])) ? PAIR[cat] : null;
   if (!cat) cat = type==='income' ? 'otherin' : 'other';
   if (!state.cats.find(c=>c.id===cat)) cat = state.cats.find(c=>c.type===type)?.id;
   const dupe = existing.has(h);
@@ -1499,7 +1548,7 @@ function assignImportCat(i, cat){
   { const s0 = $(`#impRows select[data-cat="${i}"]`); if (s0) s0.value = cat;
     const key = (r.name || r.text).toLowerCase().replace(/[^a-z0-9 .&'-]/g,' ').replace(/\b\d+\b/g,' ').replace(/\s+/g,' ').trim().slice(0,32);
     if (key.length>=3) { imp.learned[key] = r.cat;
-      imp.items.forEach((o,j)=>{ if (o!==r && o.type===r.type && (o.name||o.text).toLowerCase().includes(key)) { o.cat = r.cat; const s = $(`#impRows select[data-cat="${j}"]`); if (s) s.value = r.cat; } }); } }
+      imp.items.forEach((o,j)=>{ const oc = o.type===r.type ? r.cat : PAIR[r.cat]; if (o!==r && oc && (o.name||o.text).toLowerCase().includes(key)) { o.cat = oc; const s = $(`#impRows select[data-cat="${j}"]`); if (s) s.value = oc; } }); } }
 }
 const NewCat = {
   cb: null, type: 'expense',
@@ -1538,6 +1587,22 @@ $('#fixedRows').addEventListener('click', async e => {
   try { await Store.saveCats(); } catch(err){ toast(errMsg(err)); }   // rules are saved with the category settings
   renderStats(); toast(h ? 'Removed from fixed costs' : 'Back in fixed costs');
 });
+const parseEur = v => { let t = String(v).replace(/[€\s]/g,''); if (!t) return null;
+  t = t.includes(',') ? t.replace(/\./g,'').replace(',','.') : (/\.\d{3}$/.test(t) ? t.replace(/\./g,'') : t);   // 10.000 / 10.000,50 / 10000.50
+  const n = parseFloat(t); return isFinite(n) ? Math.round(n*100) : null; };
+async function saveAccts(accounts, msg){
+  const HS = window.HubStore; if (!HS || !HS.row) { toast('Net worth isn’t set up yet'); return; }
+  try { await HS.save({ investing: { ...(HS.row.investing || {}), accounts } }); $('#sAcct').classList.remove('open'); toast(msg); renderHub(); }
+  catch(err) { toast(errMsg(err)); }
+}
+$('#acctSave').onclick = () => {
+  const start = parseEur($('#acctBal').value), date = $('#acctDate').value;
+  if (start == null) { toast('Enter the balance'); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast('Pick the date'); return; }
+  const old = acctList()[0];
+  saveAccts([{ id: old ? old.id : 'a_'+uid(), name: $('#acctName').value.trim() || 'Savings', start, startDate: date }], 'Savings saved');
+};
+$('#acctDel').onclick = () => saveAccts([], 'Savings removed');
 $('#dlBackup').onclick = async () => {
   const HS = window.HubStore; try { if (HS && HS.sb) await HS.load(); } catch(e){}
   const r = (HS && HS.row) || {};
