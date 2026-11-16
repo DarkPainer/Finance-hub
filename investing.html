@@ -156,6 +156,7 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
     </div></section>
 
     <section class="sec"><h2>Per asset class over time</h2><div class="card"><div class="legend" id="lgndA"></div><div class="chartbox"><canvas id="cAssets"></canvas></div></div></section>
+    <section class="sec"><h2>Profit per asset class</h2><div class="card"><p class="note" id="profNote"></p><div class="legend" id="lgndP"></div><div class="chartbox"><canvas id="cProfit"></canvas></div></div></section>
     <section class="sec"><h2>Current allocation</h2><div class="card"><div class="legend" id="lgndB"></div><div class="chartbox"><canvas id="cAlloc"></canvas></div></div></section>
     <section class="sec"><h2>New money per month</h2><div class="card"><div class="legend" id="lgndC"></div><div class="chartbox"><canvas id="cInvested"></canvas></div></div></section>
     <section class="sec"><h2>Invested vs value today</h2><div class="card"><div class="legend"><span><i style="background:var(--c-invested)"></i>Invested since Jan</span><span><i style="background:var(--c-stocks)"></i>Value today (class colour)</span></div><div class="chartbox"><canvas id="cCompare"></canvas></div></div></section>
@@ -367,7 +368,7 @@ function drawCharts(C){
   charts.forEach(c => c.destroy()); charts = [];
   const grid = css('--line'), ink = css('--text-2');
   Chart.defaults.color = ink; Chart.defaults.borderColor = grid; Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
-  const eurTick = { callback: v => '€' + (Math.abs(v) >= 1000 ? (v/1000)+'k' : v) };
+  const eurTick = { callback: v => (v < 0 ? '−' : '') + '€' + (Math.abs(v) >= 1000 ? (Math.abs(v)/1000)+'k' : Math.abs(v)) };
   const tt = { mode:'index', intersect:false, callbacks:{ label: c => ` ${c.dataset.label}: ${eur(c.parsed.y ?? c.parsed)}` } };
   const base = { maintainAspectRatio:false, animation:false, interaction:{mode:'index',intersect:false}, plugins:{ legend:{display:false}, tooltip:tt }, scales:{ y:{ ticks:eurTick, grid:{color:grid} }, x:{ grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:6} } } };
   const bars = { ...base, scales:{ ...base.scales, x:{ ...base.scales.x, offset:true } } };
@@ -380,6 +381,13 @@ function drawCharts(C){
   const leg = cls => cls.map(c => `<span><i style="background:${C[c]}"></i>${IC.label(c)}</span>`).join('');
   $('#lgndA').innerHTML = leg(IC.CLASSES); $('#lgndB').innerHTML = leg(IC.CLASSES); $('#lgndC').innerHTML = leg(IC.CLASSES);
   charts.push(new Chart($('#cAssets'), { type:'line', data:{ labels, datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:EV.series.map(h=>h[c]), borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })) }, options:base }));
+  { const first = EV.series.length ? EV.series[0].date : '';
+    $('#profNote').textContent = `Gain or loss since your first snapshot (${first}): change in value minus the new money you put in. Holdings bought before then start at €0, because their purchase price isn't known.`;
+    $('#lgndP').innerHTML = leg(IC.CLASSES) + `<span><i style="background:var(--text-2)"></i>Total</span>`;
+    const zero = { id:'zero', beforeDatasetsDraw(ch){ const y = ch.scales.y.getPixelForValue(0), a = ch.chartArea; if (y < a.top || y > a.bottom) return; const g = ch.ctx; g.save(); g.strokeStyle = css('--muted'); g.lineWidth = 1; g.beginPath(); g.moveTo(a.left, y); g.lineTo(a.right, y); g.stroke(); g.restore(); } };
+    charts.push(new Chart($('#cProfit'), { type:'line', plugins:[zero], data:{ labels, datasets: [
+      ...IC.CLASSES.map(c => ({ label:IC.label(c), data:EV.profit[c], borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })),
+      { label:'Total', data:EV.profit.Total, borderColor:css('--text-2'), backgroundColor:css('--text-2'), borderDash:[6,4], borderWidth:2, pointRadius:0, tension:.3 } ] }, options:base })); }
   charts.push(new Chart($('#cAlloc'), { type:'doughnut', data:{ labels:IC.CLASSES.map(IC.label), datasets:[{ data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderColor:css('--surface'), borderWidth:2 }] },
     options:{ maintainAspectRatio:false, animation:false, cutout:'62%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c => ` ${c.label}: ${eur(c.parsed)} (${(c.parsed/EV.liveTotal*100).toFixed(1)}%)` } } } } }));
   charts.push(new Chart($('#cInvested'), { type:'bar', data:{ labels:D.invested.map(m=>m.month.replace(' 20',' ’')), datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:D.invested.map(m=>m[c]||0), backgroundColor:C[c], borderColor:css('--surface'), borderWidth:{top:2}, borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom' })) },

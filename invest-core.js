@@ -237,6 +237,17 @@ function evaluate(inv, d, prices, ov){
     growth.push(totals[i] - totals[i-1] - added);
   }
   const totalGrowth = growth.reduce((a,b) => a+b, 0);
+  // profit per class since the first snapshot: value change minus new money, added up month by month.
+  // Starts at 0 on the first snapshot, because what was paid for holdings before tracking began is unknown.
+  const profit = Object.fromEntries([...CLASSES, "Total"].map(c => [c, series.length ? [0] : []]));
+  for(let i = 1; i < series.length; i++){
+    let add;
+    if(i === series.length-1) add = sinceSnap;
+    else { const dd = parseDate(series[i].date); add = investedByMonth[monthKey(new Date(dd.getFullYear(), dd.getMonth()-1, 1))] || {}; }
+    let tot = 0;
+    for(const c of CLASSES){ const v = profit[c][i-1] + (series[i][c]||0) - (series[i-1][c]||0) - (add[c]||0); profit[c].push(v); tot += v; }
+    profit.Total.push(tot);
+  }
   let best = { n:"—", v:-Infinity };
   const lastH = holdings.length ? holdings[holdings.length-1] : {};
   const change = {};   // since the last month-start snapshot, new money left out
@@ -249,7 +260,7 @@ function evaluate(inv, d, prices, ov){
     const u1 = q ? r.val / q : r.val;
     r.chg = q ? (u1 - u0) * q : (u1 - u0); r.chgPct = u0 ? (u1/u0 - 1) * 100 : null; r.chgSince = ps.date;
   }
-  return { rows, live, liveTotal, series, totals, cum, totalInvested, prevTotal, momAbs, lastSnap, growth, glabels, totalGrowth, best, warnings, change,
+  return { rows, live, liveTotal, series, totals, cum, totalInvested, prevTotal, momAbs, lastSnap, growth, glabels, totalGrowth, profit, best, warnings, change,
     firstMonth: d.invested.length ? d.invested[0].month : "" };
 }
 
