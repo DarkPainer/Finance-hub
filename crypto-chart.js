@@ -99,7 +99,7 @@ function parseLines(text, symToId){
 /* ---- candle chart on a canvas: drag to move, pinch or scroll to zoom, tap for details.
    The price axis always fits the candles (and trades) in view. */
 function CandleChart(canvas, opts){
-  const ctx = canvas.getContext('2d'), S = { candles: [], marks: [], avg: null, last: null, n: 90, end: 0, info: null, vx: 0, step: DAY };
+  const ctx = canvas.getContext('2d'), S = { candles: [], marks: [], avg: null, last: null, n: 90, end: 0, info: null, vx: 0, step: DAY, ylo: null, yhi: null };
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const PR = 56, PB = 22, PT = 8;
   let W = 0, H = 0, dpr = 1, raf = 0;
@@ -125,6 +125,11 @@ function CandleChart(canvas, opts){
     for (let i = a; i <= b; i++) { lo = Math.min(lo, S.candles[i][3]); hi = Math.max(hi, S.candles[i][2]); }
     for (const m of vm) { lo = Math.min(lo, m.price); hi = Math.max(hi, m.price); }
     const pad = (hi - lo) * 0.08 || hi * 0.05; lo -= pad; hi += pad;
+    // glide the price axis towards the new range instead of jumping, so moving and zooming feel smooth
+    if (S.ylo == null || !isFinite(S.ylo)) { S.ylo = lo; S.yhi = hi; }
+    else { const k = 0.3; S.ylo += (lo - S.ylo) * k; S.yhi += (hi - S.yhi) * k;
+      if (Math.abs(S.ylo - lo) > (hi - lo) * 0.002 || Math.abs(S.yhi - hi) > (hi - lo) * 0.002) redraw(); else { S.ylo = lo; S.yhi = hi; } }
+    lo = S.ylo; hi = S.yhi;
     const y = v => PT + (H - PT - PB) * (hi - v) / (hi - lo);
     // grid + price axis
     const st = nice(hi - lo, 5); ctx.font = '11px -apple-system,BlinkMacSystemFont,Roboto,sans-serif'; ctx.textBaseline = 'middle';
@@ -182,16 +187,20 @@ function CandleChart(canvas, opts){
   canvas.style.touchAction = 'none';
   canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.offsetX, y: e.offsetY }); S.vx = 0; moved = false;
     if (pts.size === 1) { drag = { x: e.offsetX, end: S.end }; lastT = performance.now(); lastX = e.offsetX; }
-    else if (pts.size === 2) { const [p, q] = [...pts.values()]; pinch = { d: Math.abs(p.x - q.x) || 1, n: S.n, end: S.end, cx: (p.x + q.x) / 2 }; drag = null; } });
+    else if (pts.size === 2) { const [p, q] = [...pts.values()]; pinch = { d: Math.max(40, Math.hypot(p.x - q.x, p.y - q.y)), n: S.n, i: S.end - (plotW() - (p.x + q.x) / 2) / cw() }; drag = null; S.vx = 0; } });
   canvas.addEventListener('pointermove', e => {
     if (!pts.has(e.pointerId)) { if (e.pointerType === 'mouse') emitInfo(e.offsetX, e.offsetY); return; }
     pts.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
-    if (pinch && pts.size === 2) { const [p, q] = [...pts.values()], d = Math.abs(p.x - q.x) || 1; const n = Math.max(12, Math.min(S.candles.length + 4, pinch.n * pinch.d / d));
-      const iAt = pinch.end - (plotW() - pinch.cx) / (plotW() / pinch.n); S.n = n; S.end = iAt + (plotW() - pinch.cx) / (plotW() / n); moved = true; redraw(); return; }
+    if (pinch && pts.size === 2) { const [p, q] = [...pts.values()], d = Math.max(40, Math.hypot(p.x - q.x, p.y - q.y)), cx = (p.x + q.x) / 2;
+      S.n = Math.max(12, Math.min(S.candles.length + 4, pinch.n * pinch.d / d));
+      S.end = pinch.i + (plotW() - cx) / cw();   // the candle that was under your fingers stays under them
+      moved = true; redraw(); return; }
     if (drag) { const dx = e.offsetX - drag.x; if (Math.abs(dx) > 4) moved = true; if (!moved) return;
       S.end = drag.end - dx / cw(); const now = performance.now(), dt = now - lastT; if (dt > 0) S.vx = (e.offsetX - lastX) / dt; lastT = now; lastX = e.offsetX;
       if (S.info != null) { S.info = null; opts.onInfo && opts.onInfo(null); } redraw(); } });
-  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null;
+  const up = e => { pts.delete(e.pointerId);
+    if (pinch && pts.size === 1) { pinch = null; const [r] = [...pts.values()]; drag = { x: r.x, end: S.end }; lastX = r.x; lastT = performance.now(); S.vx = 0; return; }
+    if (pts.size < 2) pinch = null;
     if (drag && !moved && pts.size === 0) emitInfo(e.offsetX, e.offsetY);
     else if (drag && moved && Math.abs(S.vx) > 0.15) { let v = S.vx; const step = () => { if (Math.abs(v) < 0.02 || pts.size) return; S.end -= v * 16 / cw(); v *= 0.93; draw(); requestAnimationFrame(step); }; requestAnimationFrame(step); }
     if (!pts.size) drag = null; };
@@ -201,7 +210,7 @@ function CandleChart(canvas, opts){
   new ResizeObserver(size).observe(canvas);
   return {
     set(d){ const keep = d.keepView && S.candles.length; S.candles = d.candles; S.marks = d.marks; S.avg = d.avg; S.step = d.step || DAY;
-      if (!keep) { S.n = Math.min(d.n || 90, Math.max(12, d.candles.length)); S.end = d.candles.length - 1 + Math.min(3, S.n * 0.04); }
+      if (!keep) { S.n = Math.min(d.n || 90, Math.max(12, d.candles.length)); S.end = d.candles.length - 1 + Math.min(3, S.n * 0.04); S.ylo = S.yhi = null; }
       S.info = null; size(); },
     zoom(n){ S.n = n; S.end = S.candles.length - 1 + Math.min(3, n * 0.04); redraw(); },
     clearInfo(){ emitInfo(null); },
