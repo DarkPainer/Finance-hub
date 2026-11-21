@@ -66,14 +66,14 @@ function position(trades){
 function parseLines(text, symToId){
   const ok = [], bad = [];
   for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim(); if (!line) continue;
+    const line = raw.replace(/[\u2212\u2012\u2013\u2014\uFE63\uFF0D]/g, '-').replace(/[\u00A0\u202F]/g, ' ').trim(); if (!line) continue;
     const parts = line.split(/\s*[;\t]\s*|\s*,\s+|\s{2,}/).filter(Boolean);
     if (parts.length < 4) { bad.push(line); continue; }
     let [d, s, q, e, kind] = parts;
     const m1 = d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/), m2 = d.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
     const date = m1 ? `${m1[1]}-${m1[2].padStart(2,'0')}-${m1[3].padStart(2,'0')}` : m2 ? `${m2[3]}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}` : null;
     const coin = symToId[s.toUpperCase()] || (Object.values(symToId).includes(s.toLowerCase()) ? s.toLowerCase() : null);
-    const num = t => { t = String(t).replace(/[€\s]/g,''); if (t.includes(',') && t.includes('.')) t = t.replace(/\./g,'').replace(',','.'); else t = t.replace(',','.'); return parseFloat(t); };
+    const num = t => { t = String(t).replace(/[€\s]/g,'').replace(/^-?(.*?)-$/, '-$1'); if (t.includes(',') && t.includes('.')) t = t.replace(/\./g,'').replace(',','.'); else t = t.replace(',','.'); return parseFloat(t); };
     const q0 = num(q), e0 = num(e), qty = Math.abs(q0), eur = Math.abs(e0);
     const sell = q0 < 0 || e0 < 0 || /^s(ell|old|ale)?$|^verkoop/i.test(kind || '');
     if (!date || !coin || !(qty > 0) || !(eur > 0)) { bad.push(line); continue; }
