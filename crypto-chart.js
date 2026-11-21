@@ -1,7 +1,8 @@
 /* Finance Hub — crypto price history with your buys marked on it.
    Daily EUR closes come from Binance's public market data (up to ~5 years), with CoinGecko
    (last 365 days) as fallback. They are cached on this device and topped up at most every 6 hours.
-   Your buys live in hub.investing.buys = [{ id, coin, date:'YYYY-MM-DD', qty, eur }] and are
+   Your trades live in hub.investing.buys = [{ id, coin, date:'YYYY-MM-DD', qty, eur, side?:'sell' }] (qty and eur
+   always positive; side 'sell' for sells) and are
    for display only: they never change your holdings. Trades logged in the ledger are shown too. */
 (function(){
 const DAY = 864e5, TTL = 6 * 36e5;
@@ -42,32 +43,44 @@ function buysFor(inv, ledger, id){
   const own = (inv.buys || []).filter(b => b.coin === id).map(b => ({ ...b, src: 'list' }));
   const seen = new Set(own.map(b => `${b.date}|${(+b.qty).toPrecision(6)}`));
   for (const t of ledger || []) {
-    if (t.cls !== 'Crypto' || t.asset !== id || !(t.qty > 0) || !(t.eur > 0)) continue;
+    if (t.cls !== 'Crypto' || t.asset !== id || !t.qty || !t.eur || (t.qty > 0) !== (t.eur > 0)) continue;
+    const sell = t.qty < 0;
     const d = /^\d{4}-\d{2}-\d{2}$/.test(t.date) ? t.date : (() => { const x = new Date(t.date); return isNaN(x) ? null : x.toISOString().slice(0,10); })();
-    if (!d || seen.has(`${d}|${(+t.qty).toPrecision(6)}`)) continue;
-    own.push({ id: 'L' + d + t.qty, coin: id, date: d, qty: +t.qty, eur: +t.eur, src: 'ledger' });
+    if (!d || seen.has(`${d}|${Math.abs(t.qty).toPrecision(6)}`)) continue;
+    own.push({ id: 'L' + d + t.qty, coin: id, date: d, qty: Math.abs(t.qty), eur: Math.abs(t.eur), src: 'ledger', ...(sell ? { side: 'sell' } : {}) });
   }
-  return own.sort((a, b) => a.date.localeCompare(b.date));
+  return own.sort((a, b) => a.date.localeCompare(b.date) || (a.side === 'sell') - (b.side === 'sell'));
+}
+// average-cost bookkeeping: what's left, what it cost, and the gain locked in by sells
+function position(trades){
+  let qty = 0, cost = 0, realised = 0, bought = 0, paid = 0, nb = 0, ns = 0;
+  for (const t of trades) {
+    if (t.side === 'sell') { const avg = qty > 0 ? cost / qty : 0, q = Math.min(t.qty, qty); realised += t.eur - q * avg; cost -= q * avg; qty -= q; ns++; }
+    else { qty += t.qty; cost += t.eur; bought += t.qty; paid += t.eur; nb++; }
+  }
+  return { qty, cost, avg: qty > 1e-12 ? cost / qty : null, realised, bought, paid, nb, ns };
 }
 
-// "2025-03-12, BTC, 0.01, 750" (also 12-03-2025, ; or tab separated, € and decimal commas)
+// "2025-03-12, BTC, 0.01, 750" (also 12-03-2025, ; or tab separated, € and decimal commas).
+// A sell: negative amount and/or €, or a 5th column "sell".
 function parseLines(text, symToId){
   const ok = [], bad = [];
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim(); if (!line) continue;
     const parts = line.split(/\s*[;\t]\s*|\s*,\s+|\s{2,}/).filter(Boolean);
     if (parts.length < 4) { bad.push(line); continue; }
-    let [d, s, q, e] = parts;
+    let [d, s, q, e, kind] = parts;
     const m1 = d.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/), m2 = d.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
     const date = m1 ? `${m1[1]}-${m1[2].padStart(2,'0')}-${m1[3].padStart(2,'0')}` : m2 ? `${m2[3]}-${m2[2].padStart(2,'0')}-${m2[1].padStart(2,'0')}` : null;
     const coin = symToId[s.toUpperCase()] || (Object.values(symToId).includes(s.toLowerCase()) ? s.toLowerCase() : null);
     const num = t => { t = String(t).replace(/[€\s]/g,''); if (t.includes(',') && t.includes('.')) t = t.replace(/\./g,'').replace(',','.'); else t = t.replace(',','.'); return parseFloat(t); };
-    const qty = num(q), eur = num(e);
+    const q0 = num(q), e0 = num(e), qty = Math.abs(q0), eur = Math.abs(e0);
+    const sell = q0 < 0 || e0 < 0 || /^s(ell|old|ale)?$|^verkoop/i.test(kind || '');
     if (!date || !coin || !(qty > 0) || !(eur > 0)) { bad.push(line); continue; }
-    ok.push({ coin, date, qty, eur });
+    ok.push({ coin, date, qty, eur, ...(sell ? { side: 'sell' } : {}) });
   }
   return { ok, bad };
 }
 
-window.CryptoChart = { history, buysFor, parseLines, DAY };
+window.CryptoChart = { history, buysFor, position, parseLines, DAY };
 })();
