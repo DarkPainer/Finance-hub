@@ -98,6 +98,13 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--text-2);white-space:pre-wrap;word-break:break-word}
 .drop{display:block;border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--text-2);cursor:pointer}
 .drop input{display:none}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px 0}
+.chips button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.chips button.on{background:var(--c-crypto);border-color:var(--c-crypto);color:#fff}
+.cxsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 8px}
+.cxsum div{background:var(--surface-2);border-radius:10px;padding:8px}
+.cxsum .k{font-size:11px;color:var(--text-2)} .cxsum .v{font-weight:700;font-size:14px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cxsum .s{font-size:11px;font-weight:600}
 .hidden{display:none!important}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-2);margin-bottom:8px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -140,6 +147,28 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
       <div id="posTable"></div>
       <p class="note" style="margin:10px 0 0" id="posNote">Tap a position to set a manual price or change where its price comes from.</p>
       <div class="row"><button class="btn hidden" id="clearOv">Clear manual prices</button></div>
+    </div></section>
+
+    <section class="sec"><h2>Crypto price history</h2><div class="card">
+      <div class="chips" id="cxCoins"></div>
+      <div class="cxsum" id="cxSum"></div>
+      <div class="chartbox"><canvas id="cCx"></canvas></div>
+      <div class="chips" id="cxRange" style="margin-top:8px;justify-content:center"></div>
+      <p class="note" id="cxNote" style="margin-top:8px"></p>
+      <details id="cxBox"><summary>Your buys (<span id="cxN">0</span>)</summary>
+        <p class="note" style="margin-top:8px">For the chart only: these don't change your holdings. Crypto buys you log under "Log a buy or sell" show up here too.</p>
+        <div class="scroll"><table id="cxTable" style="min-width:0"></table></div>
+        <div class="form" style="margin-top:10px">
+          <label>Date<input type="date" id="cxDate"></label>
+          <label>Coin<select id="cxCoin"></select></label>
+          <label>Amount (coins)<input type="number" step="any" inputmode="decimal" id="cxQty"></label>
+          <label>€ paid (incl. fees)<input type="number" step="any" inputmode="decimal" id="cxEur"></label>
+        </div>
+        <div class="row"><button class="btn primary" id="cxAdd">Add buy</button></div>
+        <div class="form" style="margin-top:14px"><label class="full">Or paste a list, one buy per line: date, coin, amount, € paid<textarea id="cxPaste" rows="4" placeholder="2025-03-12, BTC, 0.01, 750&#10;2025-04-02, SOL, 3, 360"></textarea></label></div>
+        <div class="row"><button class="btn" id="cxImport">Add these buys</button></div>
+        <div class="msg" id="cxMsg"></div>
+      </details>
     </div></section>
 
     <section class="sec"><h2>Log a buy or sell</h2><div class="card">
@@ -204,6 +233,7 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 <script src="invest-core.js"></script>
 <script src="hub-store.js"></script>
 <script src="vinyl-core.js"></script>
+<script src="crypto-chart.js"></script>
 <script>
 (async () => {
 const $ = s => document.querySelector(s);
@@ -301,7 +331,7 @@ async function refresh(){
   } catch(e){ status('Price update failed: ' + (e.message||e)); }
   running = false; $('#refresh').disabled = false; paint();
 }
-$('#refresh').onclick = () => { if (!running) refresh(); };
+$('#refresh').onclick = () => { if (running) return; if (cxCoin) loadCx(cxCoin, true); refresh(); };
 
 // ---- render
 let charts = []; const openRows = new Set();
@@ -395,8 +425,97 @@ function drawCharts(C){
   charts.push(new Chart($('#cCompare'), { type:'bar', data:{ labels:IC.CLASSES.map(IC.label), datasets:[
     { label:'Invested since Jan', data:IC.CLASSES.map(c=>D.invested.reduce((s,m)=>s+(m[c]||0),0)), backgroundColor:css('--c-invested'), borderRadius:4 },
     { label:'Value today', data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderRadius:4 } ] }, options:bars }));
+  paintCx();
   charts.push(new Chart($('#cGrowth'), { type:'bar', data:{ labels:EV.glabels.map(s=>s.replace(' (live)',' · now')), datasets:[{ label:'Market gain/loss', data:EV.growth, backgroundColor:EV.growth.map(v=>v>=0?css('--good'):css('--bad')), borderRadius:4 }] }, options:bars }));
 }
+
+// ---- crypto price history with buy markers
+const CX = window.CryptoChart; let cxCoin = null, cxRange = '1Y', cxChart = null, cxData = {}, cxLoading = {};
+const cxLabel = id => ((HS.row.investing.cryptoLabel || {})[id] || id).toUpperCase();
+const fmtDate = d => new Date(d + (String(d).length === 10 ? 'T12:00' : '')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const pxFmt = v => '€' + v.toLocaleString('nl-NL',{maximumFractionDigits: v < 1 ? 4 : v < 100 ? 2 : 0});
+function cxCoins(){
+  const inv = HS.row.investing, px = (HS.row.prices && HS.row.prices.cryptoEur) || {};
+  const ids = new Set([...Object.keys(D.CRYPTO || {}), ...(inv.buys || []).map(b => b.coin)]);
+  return [...ids].filter(id => !/^(usd-coin|tether)$/.test(id)).sort((a, b) => ((D.CRYPTO[b]||0) * (px[b]||0)) - ((D.CRYPTO[a]||0) * (px[a]||0)));
+}
+async function loadCx(id, force){
+  if (cxLoading[id]) return; cxLoading[id] = true;
+  try { cxData[id] = await CX.history(id, cxLabel(id), force); } catch(e) { cxData[id] = { pts: [], failed: true }; }
+  cxLoading[id] = false; if (id === cxCoin) paintCx();
+}
+function paintCx(){
+  const coins = cxCoins(); if (!coins.length) { $('#cxCoins').closest('.sec').classList.add('hidden'); return; }
+  $('#cxCoins').closest('.sec').classList.remove('hidden');
+  if (!coins.includes(cxCoin)) cxCoin = coins[0];
+  $('#cxCoins').innerHTML = coins.map(id => `<button data-cx="${esc(id)}" class="${id===cxCoin?'on':''}">${esc(cxLabel(id))}</button>`).join('');
+  $('#cxRange').innerHTML = ['3M','1Y','All'].map(r => `<button data-cr="${r}" class="${r===cxRange?'on':''}">${r}</button>`).join('');
+  $('#cxCoin').innerHTML = coins.map(id => `<option value="${esc(id)}" ${id===cxCoin?'selected':''}>${esc(cxLabel(id))}</option>`).join('');
+  if (!$('#cxDate').value) $('#cxDate').value = new Date().toISOString().slice(0,10);
+  const id = cxCoin, sym = cxLabel(id), buys = CX.buysFor(HS.row.investing, HS.row.ledger, id);
+  // buys table
+  $('#cxN').textContent = (HS.row.investing.buys || []).length;
+  $('#cxTable').innerHTML = buys.length ? `<tr><th>${esc(sym)} buys</th><th>Amount</th><th>Paid</th><th>Price</th><th></th></tr>` + buys.slice().reverse().map(b => `<tr><td>${esc(fmtDate(b.date))}</td><td>${(+b.qty).toLocaleString('nl-NL',{maximumFractionDigits:6})}</td><td>${eur(b.eur)}</td><td>${pxFmt(b.eur/b.qty)}</td><td>${b.src==='list' ? `<button class="del" data-cxdel="${esc(b.id)}" aria-label="Remove">✕</button>` : '<span class="tag">ledger</span>'}</td></tr>`).join('') : `<tr><td class="tag" style="white-space:normal">No ${esc(sym)} buys yet. Add them below.</td></tr>`;
+  // summary
+  const now = (HS.row.prices && HS.row.prices.cryptoEur || {})[id], held = D.CRYPTO[id] || 0;
+  const bq = buys.reduce((a, b) => a + b.qty, 0), be = buys.reduce((a, b) => a + b.eur, 0), avg = bq ? be / bq : null;
+  const pct = avg && now ? (now / avg - 1) * 100 : null;
+  $('#cxSum').innerHTML = `<div><div class="k">Price now</div><div class="v num">${now ? pxFmt(now) : '—'}</div><div class="s" style="color:var(--text-2)">${held ? `${held.toLocaleString('nl-NL',{maximumFractionDigits:4})} held` : ''}</div></div>`
+    + `<div><div class="k">Avg buy price</div><div class="v num">${avg ? pxFmt(avg) : '—'}</div><div class="s" style="color:var(--text-2)">${buys.length ? `${buys.length} buy${buys.length>1?'s':''} · ${eur(be)}` : 'add your buys'}</div></div>`
+    + `<div><div class="k">vs your average</div><div class="v num ${pct==null?'':pct>=0?'pos':'neg'}">${pct==null ? '—' : (pct>=0?'+':'−') + Math.abs(pct).toFixed(1) + '%'}</div><div class="s ${pct==null?'':pct>=0?'pos':'neg'}">${pct==null ? '' : sign(bq * now - be)}</div></div>`;
+  // chart
+  const h = cxData[id];
+  if (!h) { loadCx(id); }
+  if (cxChart) { cxChart.destroy(); cxChart = null; }
+  const pts = h ? h.pts.slice() : [];
+  if (now && pts.length) { const today = Math.floor(Date.now() / CX.DAY) * CX.DAY; if (pts[pts.length-1][0] < today) pts.push([today, now]); else pts[pts.length-1] = [pts[pts.length-1][0], now]; }
+  const firstBuy = buys.length ? new Date(buys[0].date + 'T00:00Z').getTime() : null;
+  const from = cxRange === '3M' ? Date.now() - 92 * CX.DAY : cxRange === '1Y' ? Date.now() - 366 * CX.DAY : Math.min(pts.length ? pts[0][0] : Date.now(), firstBuy || Infinity);
+  const line = pts.filter(p => p[0] >= from).map(p => ({ x: p[0], y: p[1] }));
+  const marks = buys.map(b => ({ x: new Date(b.date + 'T12:00Z').getTime(), y: b.eur / b.qty, b })).filter(m => m.x >= from);
+  const maxE = Math.max(1, ...buys.map(b => b.eur)), col = css('--c-crypto'), ink = css('--text');
+  $('#cxNote').textContent = !h ? 'Loading price history…' : !pts.length ? `Couldn't load ${sym} price history right now. Try Refresh later.`
+    : `Daily closing price in euros${h.src ? ' from ' + h.src : ''}${h.stale ? ' (saved copy, update failed)' : ''}. Dots are your buys at the price you paid; bigger dots are bigger buys.${firstBuy && pts.length && firstBuy < pts[0][0] ? ' Buys from before the price history starts are left off the line.' : ''}`;
+  if (!line.length) return;
+  const dfmt = (v, long) => new Date(v).toLocaleDateString('en-GB', long ? {day:'numeric',month:'short',year:'numeric'} : (cxRange === '3M' ? {day:'numeric',month:'short'} : {month:'short',year:'2-digit'}));
+  const datasets = [{ type:'line', label:sym, data:line, borderColor:col, backgroundColor:col, borderWidth:2, pointRadius:0, pointHoverRadius:3, tension:.15, order:2 }];
+  if (avg) datasets.push({ type:'line', label:'Avg buy', data:[{x:line[0].x,y:avg},{x:line[line.length-1].x,y:avg}], borderColor:css('--text-2'), borderDash:[5,4], borderWidth:1.5, pointRadius:0, pointHoverRadius:0, order:3 });
+  if (marks.length) datasets.push({ type:'scatter', label:'Buy', data:marks, backgroundColor:ink, borderColor:css('--surface'), borderWidth:2, pointRadius:marks.map(m => 4 + 5 * Math.sqrt(m.b.eur / maxE)), pointHoverRadius:marks.map(m => 6 + 5 * Math.sqrt(m.b.eur / maxE)), order:1 });
+  cxChart = new Chart($('#cCx'), { data:{ datasets }, options:{ maintainAspectRatio:false, animation:false, parsing:false,
+    interaction:{ mode:'nearest', intersect:false, axis:'x' },
+    plugins:{ legend:{display:false}, tooltip:{ filter: c => c.dataset.label !== 'Avg buy', callbacks:{
+      title: items => dfmt(items[0].raw.b ? items[0].raw.x : items[0].parsed.x, true),
+      label: c => c.raw.b ? ` Bought ${(+c.raw.b.qty).toLocaleString('nl-NL',{maximumFractionDigits:6})} ${sym} for ${eur(c.raw.b.eur)} (${pxFmt(c.raw.y)})` : ` ${sym}: ${pxFmt(c.parsed.y)}` } } },
+    scales:{ x:{ type:'linear', min:line[0].x, max:line[line.length-1].x, grid:{display:false}, ticks:{ maxRotation:0, autoSkip:true, maxTicksLimit:5, callback: v => dfmt(v) } },
+      y:{ grid:{color:css('--line')}, ticks:{ maxTicksLimit:6, callback: v => '€' + (v >= 10000 ? (v/1000).toLocaleString('nl-NL') + 'k' : v.toLocaleString('nl-NL',{maximumFractionDigits: v < 1 ? 4 : 2})) } } } } });
+}
+$('#cxCoins').addEventListener('click', e => { const b = e.target.closest('[data-cx]'); if (b) { cxCoin = b.dataset.cx; paintCx(); } });
+$('#cxRange').addEventListener('click', e => { const b = e.target.closest('[data-cr]'); if (b) { cxRange = b.dataset.cr; paintCx(); } });
+async function saveBuys(list, msg){
+  try { await HS.save({ investing: { ...HS.row.investing, buys: list } }); $('#cxMsg').innerHTML = `<span class="pos">${esc(msg)}</span>`; }
+  catch(err) { $('#cxMsg').innerHTML = `<span class="neg">Couldn't save: ${esc(err.message)}</span>`; }
+  paintCx();
+}
+const newId = () => 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+$('#cxAdd').onclick = () => {
+  const date = $('#cxDate').value, coin = $('#cxCoin').value, qty = parseFloat($('#cxQty').value), e = parseFloat($('#cxEur').value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !(qty > 0) || !(e > 0)) { $('#cxMsg').innerHTML = '<span class="neg">Fill in the date, amount and € paid.</span>'; return; }
+  cxCoin = coin; $('#cxQty').value = ''; $('#cxEur').value = '';
+  saveBuys([...(HS.row.investing.buys || []), { id:newId(), coin, date, qty, eur:e }], 'Buy added ✓');
+};
+$('#cxImport').onclick = () => {
+  const lab = HS.row.investing.cryptoLabel || {}, symToId = {};
+  for (const id of new Set([...Object.keys(lab), ...Object.keys(D.CRYPTO || {})])) symToId[(lab[id] || id).toUpperCase()] = id;
+  const { ok, bad } = CX.parseLines($('#cxPaste').value, symToId);
+  if (!ok.length) { $('#cxMsg').innerHTML = `<span class="neg">No buys recognised. Use one per line: 2025-03-12, BTC, 0.01, 750</span>`; return; }
+  const have = new Set((HS.row.investing.buys || []).map(b => `${b.coin}|${b.date}|${b.qty}|${b.eur}`));
+  const add = ok.filter(b => !have.has(`${b.coin}|${b.date}|${b.qty}|${b.eur}`)).map(b => ({ id:newId(), ...b }));
+  $('#cxPaste').value = bad.join('\n');
+  if (add.length) cxCoin = add[0].coin;
+  saveBuys([...(HS.row.investing.buys || []), ...add], `${add.length} buy${add.length===1?'':'s'} added${ok.length>add.length?` (${ok.length-add.length} already there)`:''}${bad.length?` · ${bad.length} line${bad.length>1?'s':''} not understood, left in the box`:''}`);
+};
+$('#cxTable').addEventListener('click', e => { const d = e.target.closest('[data-cxdel]'); if (!d) return;
+  saveBuys((HS.row.investing.buys || []).filter(b => b.id !== d.dataset.cxdel), 'Buy removed'); });
 
 // ---- manual prices
 $('#posTable').addEventListener('change', async e => {

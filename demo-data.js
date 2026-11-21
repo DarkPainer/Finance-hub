@@ -80,6 +80,9 @@ const bank = {};
 let bal = 1450;
 months.slice(0, 3).forEach(([y, m]) => { const last = new Date(y, m, 0).getDate(); bal += 180 + Math.round(rnd()*120); bank[`${y}-${pad(m)}-${pad(last)}`] = bal * 100; });
 
+investing.buys = (() => { const d = n => { const x = new Date(now); x.setDate(x.getDate() - n); return x.toISOString().slice(0,10); };
+  return [{ id:'db1', coin:'bitcoin', date:d(300), qty:0.01, eur:620 }, { id:'db2', coin:'bitcoin', date:d(200), qty:0.008, eur:700 }, { id:'db3', coin:'bitcoin', date:d(70), qty:0.007, eur:690 },
+    { id:'db4', coin:'ethereum', date:d(250), qty:0.3, eur:900 }, { id:'db5', coin:'ethereum', date:d(120), qty:0.3, eur:720 }]; })();
 investing.accounts = [{ id: 'a_demo', name: 'Savings', start: 600000, startDate: `${months[0][0]}-${pad(months[0][1])}-01` }];
 
 window.DEMO_DATA = {
