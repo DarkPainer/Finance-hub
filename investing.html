@@ -118,6 +118,17 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 .cxmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:13px;pointer-events:none;text-align:center;padding:20px}
 .cxmsg:empty{display:none}
 .cxbot{display:flex;justify-content:space-between;gap:8px;padding:8px 10px 10px}
+.plscroll{flex:1;overflow:auto;padding-bottom:20px}
+.plhead{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:6px 14px 12px}
+.plhead .k{font-size:12px;color:var(--text-2)} .plhead .v{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:2px}
+.plnote{font-size:12px;color:var(--text-2);padding:0 14px 6px} .plnote:empty{display:none}
+.plc{border-top:1px solid var(--line);padding:14px 14px 6px}
+.plct{display:flex;justify-content:space-between;align-items:center} .plct b{font-size:15px} .plct span{display:block;font-size:12px;color:var(--text-2);margin-top:2px}
+.plct .chips button{padding:4px 10px;font-size:12px}
+.plv{font-size:22px;font-weight:700;margin:4px 0 6px}
+.plbox{position:relative;height:190px}
+.lnk{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.lnk small{display:block;color:var(--text-2);font-size:11px} .lnk select{width:100%;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--text)}
 .cxsheet{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end}
 .cxsh{background:var(--surface);width:100%;max-height:85%;overflow:auto;border-radius:18px 18px 0 0;padding:14px 14px calc(16px + env(safe-area-inset-bottom))}
 .cxshtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px} .cxshtop button{border:0;background:none;font-size:26px;line-height:1;color:var(--text-2);cursor:pointer}
@@ -165,7 +176,8 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
       <div class="row"><button class="btn hidden" id="clearOv">Clear manual prices</button></div>
     </div></section>
 
-    <section class="sec" id="cxEntry"><button class="card cxopen" id="cxOpen"><span><b>Crypto charts</b><small id="cxEntrySub">Candles with your buys and sells</small></span><i>›</i></button></section>
+    <section class="sec"><button class="card cxopen" id="plOpen" style="margin-bottom:10px"><span><b>Profit &amp; loss</b><small id="plEntrySub">Weekly, stocks and crypto</small></span><i>›</i></button>
+      <button class="card cxopen" id="cxOpen"><span><b>Crypto charts</b><small id="cxEntrySub">Candles with your buys and sells</small></span><i>›</i></button></section>
 
     <section class="sec"><h2>Log a buy or sell</h2><div class="card">
       <div class="form">
@@ -224,6 +236,25 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
   </main>
 </div>
 
+<div id="plView" class="cxv hidden">
+  <div class="cxtop"><button id="plBack" aria-label="Back">‹</button><div class="chips" id="plCls"></div><button id="plImpBtn">Import</button></div>
+  <div class="plscroll">
+    <div class="plhead"><div><div class="k">This week</div><div class="v num" id="plWeek">—</div></div><div><div class="k">Total P&amp;L</div><div class="v num" id="plTot">—</div></div></div>
+    <div class="chips" id="plRange" style="padding:0 14px 6px"></div>
+    <div class="plnote" id="plNote"></div>
+    <div class="plc"><div class="plct"><div><b>Cumulative P&amp;L</b><span id="plCumD"></span></div><div class="chips" id="plUnit"></div></div><div class="plv num" id="plCumV"></div><div class="plbox"><canvas id="plCum"></canvas></div></div>
+    <div class="plc"><div class="plct"><div><b>Weekly P&amp;L</b><span id="plBarD"></span></div></div><div class="plv num" id="plBarV"></div><div class="plbox"><canvas id="plBar"></canvas></div></div>
+    <div class="plc"><div class="plct"><div><b>Total value</b><span id="plValD"></span></div></div><div class="plv num" id="plValV"></div><div class="plbox"><canvas id="plVal"></canvas></div></div>
+  </div>
+  <div class="cxsheet hidden" id="plSheet"><div class="cxsh">
+    <div class="cxshtop"><b>Stock trades</b><button id="plShClose" aria-label="Close">×</button></div>
+    <p class="note">Upload DEGIRO's Transactions export (Inbox → Transactions → Export → CSV). Uploading a newer export later adds only the new trades.</p>
+    <label class="btn" style="display:inline-flex;margin:10px 0">Choose CSV file<input type="file" id="plFile" accept=".csv,text/csv" hidden></label>
+    <div class="msg" id="plMsg"></div>
+    <div id="plLinks"></div>
+  </div></div>
+</div>
+
 <div id="cxView" class="cxv hidden">
   <div class="cxtop"><button id="cxBack" aria-label="Back">‹</button><div class="chips" id="cxCoins"></div><button id="cxTrBtn">Trades</button></div>
   <div class="cxhead"><div class="v num" id="cxPx"></div><div class="d num" id="cxSub"></div></div>
@@ -252,6 +283,7 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 <script src="hub-store.js"></script>
 <script src="vinyl-core.js"></script>
 <script src="crypto-chart.js"></script>
+<script src="pnl-core.js"></script>
 <script>
 (async () => {
 const $ = s => document.querySelector(s);
@@ -444,7 +476,7 @@ function drawCharts(C){
   charts.push(new Chart($('#cCompare'), { type:'bar', data:{ labels:IC.CLASSES.map(IC.label), datasets:[
     { label:'Invested since Jan', data:IC.CLASSES.map(c=>D.invested.reduce((s,m)=>s+(m[c]||0),0)), backgroundColor:css('--c-invested'), borderRadius:4 },
     { label:'Value today', data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderRadius:4 } ] }, options:bars }));
-  paintCxEntry(); if (!$('#cxView').classList.contains('hidden')) paintCx(true);
+  paintCxEntry(); paintPlEntry(); if (!$('#cxView').classList.contains('hidden')) paintCx(true); if (!$('#plView').classList.contains('hidden') && !plBusy) plPaint();
   charts.push(new Chart($('#cGrowth'), { type:'bar', data:{ labels:EV.glabels.map(s=>s.replace(' (live)',' · now')), datasets:[{ label:'Market gain/loss', data:EV.growth, backgroundColor:EV.growth.map(v=>v>=0?css('--good'):css('--bad')), borderRadius:4 }] }, options:bars }));
 }
 
@@ -452,6 +484,114 @@ function drawCharts(C){
 const posOpen = () => { try { return localStorage.getItem('fh-pos-open') === '1'; } catch(e){ return false; } };
 function posShow(){ const o = posOpen(); $('#posCard').classList.toggle('hidden', !o); $('#posTog').classList.toggle('shut', !o); }
 $('#posTog').onclick = () => { try { localStorage.setItem('fh-pos-open', posOpen() ? '0' : '1'); } catch(e){} posShow(); };
+
+// ---- profit & loss: weekly, stocks + crypto
+const PL = window.PnL; let plCls = 'Total', plRange = '6M', plUnit = 'eur', plSel = null, plCharts = [], plRes = null, plBusy = false;
+const baseDayUTC = () => { const d = IC.parseDate(HS.row.investing.baseline.date); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); };
+function plLive(){
+  const stocks = {}; for (const r of (EV && EV.rows) || []) if (r.cls === 'Stocks' && r.val != null && r.qty > 0) stocks[r.name.split(' · ')[0]] = r.val / r.qty;
+  return { stocks, crypto: (HS.row.prices && HS.row.prices.cryptoEur) || {} };
+}
+function plCryptoInputs(){
+  const inv = HS.row.investing, ids = new Set([...Object.keys(inv.baseline.crypto || {}), ...(inv.buys || []).map(b => b.coin)]), trades = {}, candles = {};
+  for (const id of ids) { trades[id] = CX.buysFor(inv, HS.row.ledger, id); const c = cxData[id]; if (c && c.pts) candles[id] = c.pts; }
+  return { ids: [...ids], trades, candles };
+}
+let plAgain = false;
+async function plLoad(){
+  if (plBusy) { plAgain = true; return; } plBusy = true; plAgain = false;
+  const inv = HS.row.investing, ci = plCryptoInputs();
+  try {
+    for (const id of ci.ids) if (!cxData[id] && !/^(usd-coin|tether)$/.test(id)) { $('#plNote').textContent = `Loading ${cxLabel(id)} prices…`; cxData[id] = await CX.history(id, cxLabel(id)); }
+    const ins = PL.instruments(inv.stockTrades || []);
+    await PL.ensureHistory({ ins, map: inv.isinMap || {}, meta: inv.stockMeta, keys: HS.row.api_keys || {}, held: sym => (D.STOCKS || []).some(s => s.sym === sym),
+      onStep: (n, t) => { $('#plNote').textContent = `Loading weekly stock prices ${n}/${t}…`; plPaint(true); } });
+  } finally { plBusy = false; }
+  if (plAgain) return plLoad();
+  plPaint();
+}
+function plPaint(loading){
+  const inv = HS.row.investing, ci = plCryptoInputs();
+  plRes = window.__pl = PL.compute({ stockTrades: inv.stockTrades || [], isinMap: inv.isinMap || {}, stockMeta: inv.stockMeta, live: plLive(),
+    cryptoTrades: ci.trades, cryptoBase: inv.baseline.crypto || {}, cryptoCandles: ci.candles, baseDay: baseDayUTC() });
+  const has = { Stocks: (inv.stockTrades || []).length > 0, Crypto: Object.values(ci.trades).some(t => t.length) };
+  const clsList = ['Total', ...['Stocks','Crypto'].filter(k => has[k])]; if (!clsList.includes(plCls)) plCls = 'Total';
+  $('#plCls').innerHTML = clsList.map(c => `<button data-pc="${c}" class="${c===plCls?'on':''}">${c}</button>`).join('');
+  $('#plRange').innerHTML = ['3M','6M','1Y','All'].map(r => `<button data-pr="${r}" class="${r===plRange?'on':''}">${r}</button>`).join('');
+  $('#plUnit').innerHTML = [['eur','€'],['pct','%']].map(([k,l]) => `<button data-pu="${k}" class="${k===plUnit?'on':''}">${l}</button>`).join('');
+  if (!loading) $('#plNote').textContent = !has.Stocks ? 'Tap Import to add your DEGIRO trades.' : plRes.notes.length ? `No price feed for ${plRes.notes.join(', ')}: valued between the prices you traded at.` : '';
+  const k = plCls, all = plRes.weeks.filter(r => r.p[k] !== undefined && r.v[k] != null);
+  const cut = { '3M': 13, '6M': 26, '1Y': 52, 'All': 1e9 }[plRange];
+  let W = all.slice(-cut);
+  const last = all[all.length - 1];
+  $('#plWeek').innerHTML = last ? `<span class="${last.p[k]>=0?'pos':'neg'}">${sign(last.p[k])}</span>` : '—';
+  const tot = last ? last.c[k] : null, totPct = last && last.cap[k] ? tot / last.cap[k] * 100 : null;
+  $('#plTot').innerHTML = last ? `<span class="${tot>=0?'pos':'neg'}">${sign(tot)}</span>${totPct!=null?` <small style="font-size:13px" class="${tot>=0?'pos':'neg'}">${tot>=0?'+':'−'}${Math.abs(totPct).toFixed(1)}%</small>`:''}` : '—';
+  plCharts.forEach(c => c.destroy()); plCharts = [];
+  if (!W.length) { ['#plCumV','#plBarV','#plValV','#plCumD','#plBarD','#plValD'].forEach(s => $(s).textContent = ''); return; }
+  // cumulative within the chosen range starts at 0
+  const c0 = W[0].c[k] - W[0].p[k];
+  const lab = r => new Date(r.w).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit',timeZone:'UTC'});
+  const cumE = W.map(r => r.c[k] - c0), cumP = W.map(r => r.cap[k] ? (r.c[k]) / r.cap[k] * 100 : 0);
+  const good = css('--good'), bad = css('--bad'), acc = css('--c-stocks'), gold = css('--c-crypto');
+  const sel = i => { plSel = i; const r = W[i], d = `Week of ${lab(r)}`;
+    $('#plCumD').textContent = d; $('#plBarD').textContent = d; $('#plValD').textContent = d;
+    const cv = plUnit === 'pct' ? cumP[i] : cumE[i];
+    $('#plCumV').innerHTML = `<span class="${cv>=0?'pos':'neg'}">${plUnit==='pct' ? (cv>=0?'+':'−') + Math.abs(cv).toFixed(1) + '%' : sign(cv)}</span>`;
+    $('#plBarV').innerHTML = `<span class="${r.p[k]>=0?'pos':'neg'}">${sign(r.p[k])}</span>`;
+    $('#plValV').textContent = eur(r.v[k]);
+    plCharts.forEach(c => { c.setActiveElements([{ datasetIndex: 0, index: i }]); c.update('none'); }); };
+  const opts = (fmt, extra) => ({ maintainAspectRatio:false, animation:false, interaction:{ mode:'index', intersect:false },
+    onHover: (e, els) => { if (els.length && els[0].index !== plSel) sel(els[0].index); }, onClick: (e, els) => { if (els.length) sel(els[0].index); },
+    plugins:{ legend:{ display:false }, tooltip:{ enabled:false } },
+    scales:{ x:{ grid:{ display:false }, ticks:{ maxTicksLimit:4, maxRotation:0, autoSkip:true } }, y:{ grid:{ color:css('--line') }, ticks:{ maxTicksLimit:5, callback: fmt } } }, ...extra });
+  const eTick = v => (v < 0 ? '−' : '') + '€' + (Math.abs(v) >= 1000 ? (Math.abs(v)/1000).toLocaleString('nl-NL',{maximumFractionDigits:1}) + 'k' : Math.round(Math.abs(v)));
+  const labels = W.map(lab), cumD = plUnit === 'pct' ? cumP : cumE;
+  plCharts.push(new Chart($('#plCum'), { type:'line', data:{ labels, datasets:[{ data:cumD, borderColor:acc, backgroundColor:acc, pointHoverBackgroundColor:css('--text'), pointHoverBorderColor:css('--surface'), borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:.2,
+    segment:{ borderColor: c => (c.p1.parsed.y >= 0 ? good : bad) } }] }, options:opts(plUnit==='pct' ? (v => v.toFixed(0) + '%') : eTick) }));
+  plCharts.push(new Chart($('#plBar'), { type:'bar', data:{ labels, datasets:[{ data:W.map(r => r.p[k]), backgroundColor:W.map(r => r.p[k] >= 0 ? good : bad), borderRadius:2, maxBarThickness:14 }] }, options:opts(eTick) }));
+  plCharts.push(new Chart($('#plVal'), { type:'line', data:{ labels, datasets:[{ data:W.map(r => r.v[k]), borderColor:gold, backgroundColor:gold + '22', pointHoverBackgroundColor:css('--text'), pointHoverBorderColor:css('--surface'), fill:true, borderWidth:2, pointRadius:0, pointHoverRadius:4, tension:.2 }] }, options:opts(eTick) }));
+  sel(W.length - 1);
+}
+function paintPlEntry(){ const n = (HS.row.investing.stockTrades || []).length; $('#plEntrySub').textContent = n ? `Weekly · stocks and crypto · ${n} stock trades` : 'Weekly · import your DEGIRO trades'; }
+function openPl(){ $('#plView').classList.remove('hidden'); document.body.style.overflow = 'hidden'; history.pushState({ pl: 1 }, ''); plPaint(true); plLoad(); }
+function closePl(fromPop){ if ($('#plView').classList.contains('hidden')) return; $('#plView').classList.add('hidden'); $('#plSheet').classList.add('hidden'); document.body.style.overflow = ''; if (!fromPop && history.state && history.state.pl) history.back(); }
+window.addEventListener('popstate', () => closePl(true));
+$('#plOpen').onclick = openPl; $('#plBack').onclick = () => closePl();
+$('#plCls').addEventListener('click', e => { const b = e.target.closest('[data-pc]'); if (b) { plCls = b.dataset.pc; plPaint(); } });
+$('#plRange').addEventListener('click', e => { const b = e.target.closest('[data-pr]'); if (b) { plRange = b.dataset.pr; plPaint(); } });
+$('#plUnit').addEventListener('click', e => { const b = e.target.closest('[data-pu]'); if (b) { plUnit = b.dataset.pu; plPaint(); } });
+$('#plImpBtn').onclick = () => { paintLinks(); $('#plSheet').classList.remove('hidden'); };
+$('#plShClose').onclick = () => $('#plSheet').classList.add('hidden');
+$('#plSheet').addEventListener('click', e => { if (e.target.id === 'plSheet') $('#plSheet').classList.add('hidden'); });
+function paintLinks(){
+  const inv = HS.row.investing, ins = Object.values(PL.instruments(inv.stockTrades || [])).filter(i => !i.broken).sort((a, b) => b.qty - a.qty || a.name.localeCompare(b.name)), map = inv.isinMap || {};
+  if (!ins.length) { $('#plLinks').innerHTML = ''; return; }
+  const opt = (i) => `<option value="">No price feed</option>` + (inv.stockMeta || []).map(s => `<option value="${esc(s.sym)}" ${map[i.isin]===s.sym?'selected':''}>${esc(s.sym)} · ${esc(s.name)}</option>`).join('');
+  $('#plLinks').innerHTML = `<p class="note" style="margin:6px 0">Price history per stock comes from the position it's linked to. Without a link, the chart draws a straight line between the prices you traded at.</p>` +
+    ins.map(i => `<div class="lnk"><div>${esc(i.name)}<small>${i.qty ? `${i.qty} held` : 'sold'} · ${i.trades.length} trade${i.trades.length>1?'s':''}</small></div><select data-isin="${esc(i.isin)}">${opt(i)}</select></div>`).join('');
+}
+$('#plLinks').addEventListener('change', async e => { const s = e.target.closest('[data-isin]'); if (!s) return;
+  const map = { ...(HS.row.investing.isinMap || {}) }; if (s.value) map[s.dataset.isin] = s.value; else delete map[s.dataset.isin];
+  try { await HS.save({ investing: { ...HS.row.investing, isinMap: map } }); plPaint(true); plLoad(); } catch(err) { $('#plMsg').innerHTML = `<span class="neg">${esc(err.message)}</span>`; } });
+$('#plFile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const msg = (t, ok) => { $('#plMsg').innerHTML = `<span class="${ok?'pos':'neg'}">${t}</span>`; };
+  let trades; try { trades = PL.parseDegiro(await f.text()); } catch(err) { return msg(esc(err.message)); }
+  const inv = HS.row.investing, have = new Set((inv.stockTrades || []).map(t => t.id)), add = trades.filter(t => !have.has(t.id));
+  const all = [...(inv.stockTrades || []), ...add].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+  const ins = PL.instruments(all), map = { ...PL.guessLinks(ins, inv.stockMeta, inv.baseline, baseDayUTC()), ...(inv.isinMap || {}) };
+  // trades after the baseline also update your holdings (ledger), unless they're already there
+  const bd = baseDayUTC(), L = [...(HS.row.ledger || [])]; let led = 0;
+  for (const t of add) { const sym = map[t.isin], d = Date.UTC(+t.date.slice(0,4), +t.date.slice(5,7)-1, +t.date.slice(8,10));
+    if (!sym || d <= bd) continue;
+    if (L.some(x => x.cls === 'Stocks' && x.asset === sym && x.date === t.date && Math.abs(x.qty - t.qty) < 1e-9)) continue;
+    L.push({ date: t.date, cls: 'Stocks', asset: sym, qty: t.qty, eur: +t.eur.toFixed(2) }); led++; }
+  try { await HS.save({ investing: { ...inv, stockTrades: all, isinMap: map }, ...(led ? { ledger: L } : {}) });
+    msg(`${add.length} new trade${add.length===1?'':'s'} added${trades.length > add.length ? ` (${trades.length - add.length} already there)` : ''}${led ? ` · ${led} after ${esc(inv.baseline.date)} added to your holdings` : ''} ✓`, true);
+    paintLinks(); paintPlEntry(); plPaint(true); plLoad(); if (led) paint && paint();
+  } catch(err) { msg(`Couldn't save: ${esc(err.message)}`); }
+};
 
 // ---- crypto charts: full-screen candles with your trades
 const CX = window.CryptoChart; let cxCoin = null, cxRange = '3M', cxTf = 'D', cxData = {}, cxLoading = {}, cxChart = null, cxShown = null;
@@ -512,7 +652,7 @@ function paintTrades(trades, sym, coins){
   if (!$('#cxDate').value) $('#cxDate').value = new Date().toISOString().slice(0,10);
 }
 function paintCxEntry(){
-  const coins = cxCoins(); $('#cxEntry').classList.toggle('hidden', !coins.length);
+  const coins = cxCoins(); $('#cxOpen').classList.toggle('hidden', !coins.length);
   const n = (HS.row.investing.buys || []).length; $('#cxEntrySub').textContent = `${coins.map(cxLabel).join(' · ')}${n ? ` · ${n} trades` : ''}`;
 }
 function openCx(){ $('#cxView').classList.remove('hidden'); document.body.style.overflow = 'hidden'; history.pushState({ cx: 1 }, ''); paintCx(); }
