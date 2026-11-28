@@ -457,7 +457,7 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-28 a';
+const APP_VERSION = '2026-11-28 b';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -818,13 +818,17 @@ const merchantKey = t => {
 // generic word (PayPal, Google, Stichting…) that different companies share.
 const SHARED_FIRST = /^(paypal|google|apple|amazon|microsoft|klarna|mollie|adyen|stripe|ideal|tikkie|stichting|gemeente|vereniging|de|het|the|van|www|bol|bol\.com|ccv|sumup|zettle|nationale|cm|ns)$/i;
 function payeeNamer(keys){
-  const firstOf = k => k.toLowerCase().split(/\s+/)[0].replace(/[^a-z0-9.&'-]/g, '');
+  // legal forms ("NV Unive Zorg", "Ziggo B.V.") don't count as the name
+  const LEGAL = /^(n\.?v\.?|b\.?v\.?|v\.?o\.?f\.?|ltd\.?|gmbh|s\.?a\.?|inc\.?|plc|ag|se)$/i;
+  const words = k => k.split(/\s+/).filter(w => w && !LEGAL.test(w));
+  const firstOf = k => (words(k)[0] || k).toLowerCase().replace(/[^a-z0-9.&'-]/g, '');
+  const pretty = k => { const w = words(k).join(' ') || k; return w === w.toUpperCase() && /[A-Z]{4}/.test(w) ? w.toLowerCase().replace(/(^|[\s-])\S/g, c => c.toUpperCase()) : w; };
   const groups = {};
   for (const k of keys) { if (!k) continue; const f = firstOf(k); const g = (f.length >= 3 && !SHARED_FIRST.test(f)) ? f : k.toLowerCase(); (groups[g] ||= new Set()).add(k); }
   const name = {};
   for (const set of Object.values(groups)) {
-    const arr = [...set].sort((a, b) => a.length - b.length || (b !== b.toUpperCase()) - (a !== a.toUpperCase()));   // shortest, preferring normal capitals
-    for (const k of arr) name[k] = arr[0];
+    const arr = [...set].map(k => [k, pretty(k)]).sort((a, b) => a[1].length - b[1].length || (b[1] !== b[1].toUpperCase()) - (a[1] !== a[1].toUpperCase()));   // shortest, preferring normal capitals
+    for (const [k] of arr) name[k] = arr[0][1];
   }
   return k => name[k] || k;
 }
