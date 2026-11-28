@@ -457,7 +457,7 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-26 a';
+const APP_VERSION = '2026-11-28 a';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -813,25 +813,39 @@ const merchantKey = t => {
   const w = note.replace(/\s+via\s.*$/i,'').split(/\s+/).filter(x => x && /[a-z]/i.test(x) && !/[\d/:]/.test(x) && !/^(NLD|NL|BV|B\.V\.|N\.V\.|NV)$/i.test(x));
   return (w[0] && w[0].length < 5 && w[1] ? w.slice(0,2) : w.slice(0,1)).join(' ').replace(/[,.;]+$/,'');
 };
+// one name per payee: "Unive" and "Unive Zorg", or "ZIGGO" and "Ziggo B.V.", are the same company.
+// Names that start with the same word are grouped under the shortest one — unless that word is a platform or
+// generic word (PayPal, Google, Stichting…) that different companies share.
+const SHARED_FIRST = /^(paypal|google|apple|amazon|microsoft|klarna|mollie|adyen|stripe|ideal|tikkie|stichting|gemeente|vereniging|de|het|the|van|www|bol|bol\.com|ccv|sumup|zettle|nationale|cm|ns)$/i;
+function payeeNamer(keys){
+  const firstOf = k => k.toLowerCase().split(/\s+/)[0].replace(/[^a-z0-9.&'-]/g, '');
+  const groups = {};
+  for (const k of keys) { if (!k) continue; const f = firstOf(k); const g = (f.length >= 3 && !SHARED_FIRST.test(f)) ? f : k.toLowerCase(); (groups[g] ||= new Set()).add(k); }
+  const name = {};
+  for (const set of Object.values(groups)) {
+    const arr = [...set].sort((a, b) => a.length - b.length || (b !== b.toUpperCase()) - (a !== a.toUpperCase()));   // shortest, preferring normal capitals
+    for (const k of arr) name[k] = arr[0];
+  }
+  return k => name[k] || k;
+}
 // recurring charges: everything in Fixed costs / Subscriptions, plus any payee that shows up in 2+ months at a similar amount
 function renderFixed(all){
   const exp = all.filter(t => t.type==='expense' && !isTransfer(t.cat));
   const allMonths = new Set(all.filter(t => t.src==='import').map(t => t.date.slice(0,7))).size;   // 'new' only makes sense once 2+ statements are in
-  const by = {};
-  for (const t of exp) { const k = merchantKey(t) || catById(t.cat).name; (by[k] ||= []).push(t); }
+  const by = {}, pn = payeeNamer([...new Set(exp.map(t => merchantKey(t)))]);
+  for (const t of exp) { const k = pn(merchantKey(t)) || catById(t.cat).name; (by[k] ||= []).push(t); }
   const rows = [];
   for (const [k, ts] of Object.entries(by)) {
     ts.sort((a,b) => a.date.localeCompare(b.date));
     const months = [...new Set(ts.map(t => t.date.slice(0,7)))];
     const fixedCat = ts.some(t => t.cat==='fixed' || t.cat==='subs');
     const last = ts[ts.length-1], prevM = months.length > 1 ? ts.filter(t => t.date.slice(0,7) === months[months.length-2]) : [];
-    const prevAmt = prevM.length ? prevM[prevM.length-1].amount : null;
-    const steady = months.length >= 2 && prevAmt && Math.abs(last.amount - prevAmt) / prevAmt < 0.15;
-    if (!fixedCat && !steady) continue;
-    // a payee charged several times in one month (e.g. two bank fees) → add them up
+    // a payee charged several times in one month (e.g. two bank fees, or two policies at one insurer) → add them up
     const lastMonth = months[months.length-1];
     const amt = ts.filter(t => t.date.slice(0,7) === lastMonth).reduce((s,t) => s + t.amount, 0);
     const prevTotal = prevM.reduce((s,t) => s + t.amount, 0);
+    const steady = months.length >= 2 && prevTotal && Math.abs(amt - prevTotal) / prevTotal < 0.15;
+    if (!fixedCat && !steady) continue;
     rows.push({ k, amt, cat: last.cat, months: months.length, lastMonth, change: prevTotal ? amt - prevTotal : null, isNew: months.length === 1 && fixedCat && allMonths > 1 });
   }
   const hiddenKey = k => '!fixed:' + k.toLowerCase();
@@ -878,7 +892,8 @@ function renderStats(){
   const max = rows.length ? rows[0][1] : 1;
   $('#avgRows').innerHTML = rows.length ? rows.map(([id,v]) => { const c=catById(id); const pm = v/base.length; return `<button class="brow tap" data-catall="${esc(id)}"><span style="font-size:20px">${esc(c.icon)}</span><div><div class="t"><span>${esc(c.name)}</span><span>${Math.round(v/T.out*100)}%</span></div><div class="bar"><i style="width:${v/max*100}%"></i></div><div class="sub">${fmt(Math.round(pm))} per month${c.budget?` · budget ${fmtShort(c.budget)}`:''}</div></div><div class="amt num">${fmt(v)}</div></button>`; }).join('') : '<div class="empty">No expenses yet.</div>';
   // payees: group expenses by the start of the note (merchant name)
-  const norm = merchantKey;
+  const exps = all.filter(t => t.type==='expense' && !isTransfer(t.cat)), pn = payeeNamer([...new Set(exps.map(t => merchantKey(t)))]);
+  const norm = t => pn(merchantKey(t));
   renderFixed(all);
   const pay = {};
   for (const t of all) if (t.type==='expense' && !isTransfer(t.cat)) { const k = norm(t) || catById(t.cat).name; (pay[k] ||= {v:0,n:0,cat:t.cat}); pay[k].v += t.amount; pay[k].n++; }
