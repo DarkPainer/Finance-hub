@@ -146,6 +146,37 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hubc a{color:var(--accent);font-size:13px;text-decoration:none}
 .h2link{color:var(--accent);font-size:13px;text-transform:none;letter-spacing:0;text-decoration:none;font-weight:500}
 .nw{padding:14px}
+.hubhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.gear{border:0;background:var(--surface);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--text-2);cursor:pointer;border:1px solid var(--line)}
+.nw .chg{font-size:13px;font-weight:600}
+.nw .spark{margin:10px 0 4px} .nw .spark svg{display:block;width:100%;height:46px}
+.nw .leg{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;color:var(--text-2);margin-top:6px}
+.nw .leg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.nw .more{background:none;border:0;color:var(--accent);font-size:13px;padding:8px 0 0;cursor:pointer}
+.halert{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);font-size:13px;font-weight:600;margin-bottom:8px;border:0;width:100%;text-align:left;cursor:pointer}
+.halert span{flex:1;color:var(--text)} .halert b{color:var(--warn)}
+.sthero{padding:14px}
+.sthero .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.sthero .sub{font-size:13px;color:var(--text-2)}
+.donut{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center;padding:14px}
+.donut .lg{display:grid;gap:2px} .donut .lg button{display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;background:none;border:0;padding:5px 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.donut .lg i{width:10px;height:10px;border-radius:3px} .donut .lg small{color:var(--text-2);font-size:11px;display:block}
+.fccard{padding:14px} .fcsplit{display:flex;height:12px;border-radius:6px;overflow:hidden;gap:2px;margin:2px 0 8px}
+.fcleg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-2)} .fcleg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+#fcAll summary,.stmore summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:600;list-style:none;padding-top:10px}
+#fcAll summary::-webkit-details-marker,.stmore summary::-webkit-details-marker{display:none}
+.stmore{padding:2px 14px 12px} .stmore summary{color:var(--text);font-weight:600;font-size:14px;padding:12px 0 2px}
+.stmore .k2{font-size:12px;color:var(--text-2);font-weight:600;margin:12px 0 4px}
+.plus{display:grid} .plus button{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:12px 4px;background:none;border:0;border-bottom:1px solid var(--line);font:inherit;font-size:16px;color:var(--text);text-align:left;cursor:pointer}
+.plus button:last-child{border-bottom:0} .plus small{display:block;font-size:12px;color:var(--text-2)} .plus .pi{width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;font-size:22px;font-weight:700}
+.htiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.htile{display:block;text-align:left;padding:12px 12px 8px;cursor:pointer;color:inherit;font:inherit;width:100%}
+.htile .k{font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:6px} .htile .k i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.htile .v{font-size:20px;font-weight:700;margin-top:2px;letter-spacing:-.01em}
+.htile .c{font-size:12px;font-weight:600}
+.htile svg{display:block;width:100%;height:26px;margin-top:4px}
+.hrow{display:grid;grid-template-columns:10px 1fr auto 14px;gap:10px;align-items:center;padding:12px 14px;width:100%;background:none;border:0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.hrow + .hrow{border-top:1px solid var(--line)} .hrow i{width:10px;height:10px;border-radius:3px} .hrow small{display:block;font-size:11px;color:var(--text-2)} .hrow .num{font-weight:600} .hrow .ch{color:var(--muted)}
 .nw .tot{font-size:30px;font-weight:700;letter-spacing:-.02em}
 .nw .lines{margin-top:10px;display:grid;gap:6px}
 .nw .ln{display:flex;justify-content:space-between;font-size:14px}
@@ -298,64 +329,39 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 
   <!-- STATS -->
   <main id="v-stats" class="hidden">
-    <section class="sec"><div class="tiles" id="tiles"></div></section>
     <section class="sec">
-      <h2 id="chartTitle">Every month</h2>
-      <div class="card chart">
-        <div class="legend"><span><i style="background:var(--s-in)"></i>Income</span><span><i style="background:var(--s-out)"></i>Expenses</span></div>
+      <div class="card sthero">
+        <div id="stHero"></div>
+        <div class="legend" style="padding:0;margin-top:10px"><span><i style="background:var(--s-in)"></i>Income</span><span><i style="background:var(--s-out)"></i>Expenses</span></div>
         <div id="chart6"></div>
         <div class="tip" id="tip"></div>
       </div>
     </section>
     <section class="sec">
-      <h2>Spending per category</h2>
-      <div class="card"><div class="rows" id="avgRows"></div></div>
+      <h2>Where it went</h2>
+      <div class="card" id="stDonut"></div>
     </section>
     <section class="sec">
       <h2 id="fcTitle">Fixed costs</h2>
-      <div class="card"><div class="rows" id="fixedRows"></div></div>
+      <div class="card fccard"><div id="fcBar"></div><details id="fcAll"><summary id="fcSum">See all</summary><div class="rows" id="fixedRows"></div></details></div>
     </section>
     <section class="sec">
-      <h2>Where you spend most</h2>
-      <div class="card"><div class="rows" id="topPayees"></div></div>
-    </section>
-    <section class="sec">
-      <h2>Biggest single expenses</h2>
-      <div class="card" id="bigTx"></div>
+      <details class="card stmore"><summary>Top payees and biggest purchases</summary>
+        <div class="k2">Where you spend most</div><div class="rows" id="topPayees"></div>
+        <div class="k2">Biggest single expenses</div><div id="bigTx"></div>
+      </details>
     </section>
   </main>
 
   <!-- HUB -->
   <main id="v-hub" class="hidden">
     <section class="sec">
-      <h2>Net worth</h2>
+      <div class="hubhead"><h2 style="margin:0">Net worth</h2><button class="gear" id="hubGear" aria-label="Settings and data"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
       <div class="card nw" id="nwCard"></div>
     </section>
-    <section class="sec">
-      <h2>Investing <a href="investing.html" class="h2link">Open ›</a></h2>
-      <a class="card inv" id="invCard" href="investing.html"></a>
-    </section>
-    <section class="sec" id="vinylSec">
-      <h2>Vinyl <a href="vinyl.html" class="h2link">Open ›</a></h2>
-      <a class="card pk" id="vinylCard" href="vinyl.html" style="display:block;color:inherit;text-decoration:none"></a>
-    </section>
-    <section class="sec">
-      <h2>Pokémon stock</h2>
-      <div class="card pk" id="pkCard"></div>
-    </section>
-    <section class="sec">
-      <h2>Your finances in one place</h2>
-      <div class="card" id="hubList"></div>
-    </section>
-    <section class="sec">
-      <h2>Data</h2>
-      <div class="card" style="padding:12px;display:grid;gap:8px">
-        <button class="btn" id="openImport">Import bank statement</button>
-        <button class="btn" id="copyCsv">Copy all transactions as CSV</button>
-        <button class="btn" id="dlBackup">Download full backup</button>
-        <div class="note" id="bkNote" style="margin:0">Everything in one file: transactions, categories, investing, bank balances and Pokémon stock. It includes your API keys, so keep it private.</div>
-      </div>
-    </section>
+    <section class="sec" id="hubAlerts"></section>
+    <section class="sec"><div class="htiles" id="hubTiles"></div></section>
+    <section class="sec"><div class="card" id="hubRows"></div></section>
   </main>
 </div>
 
@@ -384,6 +390,32 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
   <div class="fields"><input type="date" id="fDate"><input id="fNote" placeholder="Note (optional)" maxlength="120"></div>
   <div class="keys" id="keys"></div>
   <div class="row-actions hidden" id="editActions"><button class="btn danger" id="delTx">Delete</button></div>
+</div></div>
+
+<!-- + button -->
+<div class="scrim" id="sPlus"><div class="sheet">
+  <div class="plus">
+    <button data-plus="expense"><span class="pi" style="color:var(--bad)">−</span><span>Expense<small>Add a purchase by hand</small></span></button>
+    <button data-plus="income"><span class="pi" style="color:var(--good)">+</span><span>Income<small>Salary, sales, refunds</small></span></button>
+    <button data-plus="import"><span class="pi" style="color:var(--accent)">⇪</span><span>Import bank statement<small>Rabobank PDF or CSV</small></span></button>
+  </div>
+</div></div>
+
+<!-- Hub settings and data -->
+<div class="scrim" id="sSet"><div class="sheet">
+  <h3>Settings and data<button data-close>×</button></h3>
+  <div class="card" id="hubList" style="margin-bottom:12px"></div>
+  <div style="display:grid;gap:8px">
+    <button class="btn" id="setSav">Savings balance</button>
+    <button class="btn" id="openImport">Import bank statement</button>
+    <button class="btn" id="copyCsv">Copy all transactions as CSV</button>
+    <button class="btn" id="dlBackup">Download full backup</button>
+    <div class="note" id="bkNote" style="margin:0">Everything in one file: transactions, categories, investing, bank balances and Pokémon stock. It includes your API keys, so keep it private.</div>
+  </div>
+</div></div>
+<div class="scrim" id="sPk"><div class="sheet">
+  <h3>Pokémon stock<button data-close>×</button></h3>
+  <div class="pk" id="pkCard"></div>
 </div></div>
 
 <!-- Savings sheet -->
@@ -457,7 +489,7 @@ nav .fab{width:52px;height:52px;margin:-26px auto 0;border-radius:50%;background
 <script>
 (() => {
 const DEMO = /[?&]demo\b/.test(location.search) || location.hash === '#demo';
-const APP_VERSION = '2026-11-28 b';
+const APP_VERSION = '2026-11-28 c';
 // ---------- helpers ----------
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -860,6 +892,12 @@ function renderFixed(all){
   const active = shown.filter(r => r.lastMonth >= addMonths(latest, -1)).sort((a,b) => b.amt - a.amt);
   const total = active.reduce((s,r) => s + r.amt, 0);
   $('#fcTitle').innerHTML = `Fixed costs <span style="text-transform:none;letter-spacing:0;font-weight:500">· ${fmt(total)} / month</span>`;
+  // one bar split by payee: the biggest five, the rest together
+  const FC = ['var(--c-stocks)','var(--c-bank)','var(--c-acct)','var(--c-crypto)','var(--c-vinyl)'], big5 = active.slice(0,5), restAmt = active.slice(5).reduce((s,r)=>s+r.amt,0);
+  const parts = [...big5.map((r,i) => [r.k, r.amt, FC[i]]), ...(restAmt ? [[`${active.length-5} more`, restAmt, 'var(--muted)']] : [])];
+  $('#fcBar').innerHTML = active.length ? `<div class="fcsplit">${parts.map(p => `<i style="display:block;width:${p[1]/total*100}%;background:${p[2]}"></i>`).join('')}</div>
+    <div class="fcleg">${parts.map(p => `<span><i style="background:${p[2]}"></i>${esc(p[0])} <span class="num">${fmtShort(Math.round(p[1]))}</span></span>`).join('')}</div>` : '';
+  $('#fcSum').textContent = active.length ? `See all ${active.length} ›` : 'Details ›';
   $('#fixedRows').innerHTML = active.length ? active.map(r => {
     const c = catById(r.cat), tag = r.isNew ? '<span class="ptag">new</span>' : (r.change && Math.abs(r.change) >= 50 ? `<span class="ptag" style="${r.change>0?'color:var(--bad)':'color:var(--good)'}">${r.change>0?'+':'−'}${fmt(Math.abs(r.change))}</span>` : '');
     return `<div class="brow fc"><span style="font-size:20px">${esc(c.icon)}</span><div><div class="t"><span>${esc(r.k)} ${tag}</span><span>${r.months} mo</span></div><div class="sub">${esc(c.name)}${r.lastMonth < latest ? ' · not charged this month yet' : ''}</div></div><div class="amt num">${fmt(r.amt)}</div><button class="fcx" data-fchide="${esc(r.k)}" aria-label="Not a fixed cost">✕</button></div>`;
@@ -870,31 +908,33 @@ function renderFixed(all){
 
 function renderStats(){
   const all = [...state.tx.values()];
-  if (!all.length) { $('#tiles').innerHTML = '<div class="card empty" style="grid-column:1/-1">Add or import transactions to see your stats.</div>'; $('#chart6').innerHTML=''; $('#avgRows').innerHTML=''; $('#fixedRows').innerHTML=''; $('#topPayees').innerHTML=''; $('#bigTx').innerHTML=''; return; }
+  if (!all.length) { $('#stHero').innerHTML = '<div class="empty">Add or import transactions to see your stats.</div>'; $('#chart6').innerHTML=''; $('#stDonut').innerHTML=''; $('#fixedRows').innerHTML=''; $('#fcBar').innerHTML=''; $('#topPayees').innerHTML=''; $('#bigTx').innerHTML=''; return; }
   const keys = all.map(t=>t.date.slice(0,7)).sort();
   const first = keys[0], last = keys[keys.length-1] > monthKey(new Date()) ? keys[keys.length-1] : monthKey(new Date());
   const months = []; for (let k = first; k <= last; k = addMonths(k,1)) months.push(k);
   const data = months.map(k => ({k, ...totals(txInMonth(k))}));
   const T = totals(all), n = months.length;
-  // full months only for averages (skip the running month unless it's the only one)
   const curKey = monthKey(new Date());
   const full = data.filter(d => d.k !== curKey && (d.inc||d.out)); const base = full.length ? full : data;
-  const avgOut = base.reduce((s,d)=>s+d.out,0)/base.length, avgIn = base.reduce((s,d)=>s+d.inc,0)/base.length;
-  const sr = T.inc ? Math.round((T.inc-T.out)/T.inc*100) : null;
+  const sr = T.inc ? Math.round((T.inc-T.out)/T.inc*100) : null, saved = T.inc - T.out;
   const span = n === 1 ? monthName(first) : `${monthName(first,{month:'short',year:'numeric'})} – ${monthName(last,{month:'short',year:'numeric'})}`;
   $('#tbarS').textContent = span;
-  $('#tiles').innerHTML = `
-    <div class="card tile"><div class="k">Saved in total</div><div class="v num" style="color:${T.inc-T.out>=0?'var(--good)':'var(--bad)'}">${fmtShort(T.inc-T.out)}</div><div class="s">${sr==null?'':sr+'% of income'}${T.tr>0?` · ${fmtShort(T.tr)} moved to investments`:''}</div></div>
-    <div class="card tile"><div class="k">Months tracked</div><div class="v num">${n}</div><div class="s">${all.length} transactions</div></div>
-    <div class="card tile"><div class="k">Avg. income / month</div><div class="v num">${fmtShort(Math.round(avgIn))}</div><div class="s">${full.length?`over ${full.length} full month${full.length===1?'':'s'}`:'so far'}</div></div>
-    <div class="card tile"><div class="k">Avg. spending / month</div><div class="v num">${fmtShort(Math.round(avgOut))}</div><div class="s">${full.length?`over ${full.length} full month${full.length===1?'':'s'}`:'so far'}</div></div>`;
-  $('#chartTitle').textContent = n > 24 ? 'Last 24 months' : 'Every month';
-  drawBars(data.slice(-24));
-  // categories: total + monthly average over all tracked months
+  // savings rate up front, then income vs spending per month
+  $('#stHero').innerHTML = `<div class="sub">You saved</div>
+    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span class="big num" style="color:${saved>=0?'var(--good)':'var(--bad)'}">${sr==null ? fmtShort(saved) : sr + '%'}</span>
+    <span class="sub">${sr==null ? '' : `of your income · <span class="num" style="color:var(--text)">${fmtShort(saved)}</span>`}</span></div>
+    <div class="sub" style="margin-top:2px">${full.length ? `on average ${fmtShort(Math.round(base.reduce((s,d)=>s+d.inc-d.out,0)/base.length))} a month` : 'so far'}${T.tr>0?` · ${fmtShort(T.tr)} moved to investments and savings`:''}</div>`;
+  drawBars(data.slice(-12));
+  // where it went: a donut of the biggest categories
   const sums = byCat(all,'expense');
-  const rows = Object.entries(sums).sort((a,b)=>b[1]-a[1]);
-  const max = rows.length ? rows[0][1] : 1;
-  $('#avgRows').innerHTML = rows.length ? rows.map(([id,v]) => { const c=catById(id); const pm = v/base.length; return `<button class="brow tap" data-catall="${esc(id)}"><span style="font-size:20px">${esc(c.icon)}</span><div><div class="t"><span>${esc(c.name)}</span><span>${Math.round(v/T.out*100)}%</span></div><div class="bar"><i style="width:${v/max*100}%"></i></div><div class="sub">${fmt(Math.round(pm))} per month${c.budget?` · budget ${fmtShort(c.budget)}`:''}</div></div><div class="amt num">${fmt(v)}</div></button>`; }).join('') : '<div class="empty">No expenses yet.</div>';
+  const rows = Object.entries(sums).sort((a,b)=>b[1]-a[1]), tot = rows.reduce((s,r)=>s+r[1],0) || 1;
+  const COLS = ['var(--c-bank)','var(--c-crypto)','var(--c-silver)','var(--c-stocks)','var(--c-vinyl)','var(--c-pokemon)'];
+  const topC = rows.slice(0, 6), rest = rows.slice(6).reduce((s,r)=>s+r[1],0);
+  const seg = [...topC.map(([id,v],i) => ({ id, v, col: COLS[i], name: catById(id).name, icon: catById(id).icon })), ...(rest ? [{ id:null, v:rest, col:'var(--muted)', name:'Everything else', icon:'' }] : [])];
+  const R = 15.9155, Cc = 100; let off = 25;
+  const arcs = seg.map(x => { const len = x.v / tot * Cc; const el = `<circle cx="21" cy="21" r="${R}" fill="none" stroke="${x.col}" stroke-width="6" stroke-dasharray="${Math.max(0, len - .6)} ${Cc - Math.max(0, len - .6)}" stroke-dashoffset="${off}"/>`; off -= len; return el; }).join('');
+  $('#stDonut').innerHTML = rows.length ? `<div class="donut"><svg viewBox="0 0 42 42" width="120" height="120" role="img" aria-label="Spending per category">${arcs}<text x="21" y="20" text-anchor="middle" font-size="3.6" fill="var(--text-2)">per month</text><text x="21" y="25.5" text-anchor="middle" font-size="5" font-weight="700" fill="var(--text)">${esc(fmtShort(Math.round(tot/base.length)))}</text></svg>
+    <div class="lg">${seg.map(x => `<button ${x.id ? `data-catall="${esc(x.id)}"` : ''}><i style="background:${x.col}"></i><span>${esc(x.name)}<small>${fmtShort(Math.round(x.v/base.length))} a month</small></span><span class="num" style="font-weight:600">${Math.round(x.v/tot*100)}%</span></button>`).join('')}</div></div>` : '<div class="empty">No expenses yet.</div>';
   // payees: group expenses by the start of the note (merchant name)
   const exps = all.filter(t => t.type==='expense' && !isTransfer(t.cat)), pn = payeeNamer([...new Set(exps.map(t => merchantKey(t)))]);
   const norm = t => pn(merchantKey(t));
@@ -993,6 +1033,7 @@ function renderPokemon(){
         Lookup errors: <b>${st.errors}</b>${li(sm.errors)}
         <button class="btn" id="pkRetry" style="margin-top:8px">Check prices again</button></div></details>`; })()}
     ${priced.length ? `<details><summary>Most valuable cards ›</summary>${priced.slice(0,12).map(r=>`<div class="it"><span>${esc(r.name)}<small>${esc(r.set)} ${esc(r.num)} · ${r.qty}× · €${r.price.toLocaleString('nl-NL',{maximumFractionDigits:2})} each${r.src==='TCGplayer'?' (US)':''} · paid ${fmt(Math.round(r.cost*100))}</small></span><span class="num" style="font-weight:600">${eurR(r.market)}</span></div>`).join('')}</details>` : ''}`;
+  bindPkRetry();
 }
 // month-end net worth: bank closing balance of month M + investments/Pokémon snapshot taken at the start of M+1
 function nwSeries(ev, pv){
@@ -1061,52 +1102,85 @@ function openAcct(){
   } else $('#acctInfo').textContent = '';
   $('#sAcct').classList.add('open');
 }
+// tiny trend line for tiles and the net worth card
+function spark(vals, col, h){
+  const v = vals.filter(x => x != null && isFinite(x)); if (v.length < 2) return `<svg viewBox="0 0 100 ${h||26}" preserveAspectRatio="none"></svg>`;
+  const H = h || 26, lo = Math.min(...v), hi = Math.max(...v), r = hi - lo || 1;
+  const pts = v.map((x, i) => `${(i / (v.length - 1) * 100).toFixed(1)},${(H - 3 - (x - lo) / r * (H - 6)).toFixed(1)}`).join(' ');
+  return `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" points="${pts}"/></svg>`;
+}
+const chgTxt = (v, pct, tail) => v == null ? '' : `<span class="${v>=0?'pos2':'neg2'}">${v>=0?'▲':'▼'} ${eurR(Math.abs(v))}${pct!=null?` · ${pct>=0?'+':'−'}${Math.abs(pct).toFixed(1)}%`:''}</span>${tail?` <span style="color:var(--muted);font-weight:500">${tail}</span>`:''}`;
+function missingStatement(){
+  const now = new Date(), prev = addMonths(monthKey(now), -1);
+  const HS = window.HubStore, bank = (HS && HS.row && HS.row.bank) || {};
+  const have = Object.keys(bank).some(d => d.startsWith(prev)) || [...state.tx.values()].some(t => t.src==='import' && t.date.startsWith(prev));
+  return !DEMO && now.getDate() >= 2 && !have && state.tx.size > 0 ? prev : null;
+}
+let nwShowBars = false;
 function renderHub(){
   const HS = window.HubStore, T = totals([...state.tx.values()]);
-  const ev = investView(), bank = HS && HS.row ? HS.latestBank() : null;
-  // net worth
+  const ev = investView(), bank = HS && HS.row ? HS.latestBank() : null, pv = pokeView();
   const nw = $('#nwCard');
+  // ---- net worth: one number, how it moved, what it's made of
   if (HS && HS.missing) nw.innerHTML = `<div class="d">One-time setup needed for net worth and investing.</div><a class="btn primary" style="display:block;text-align:center;margin-top:10px;text-decoration:none" href="investing.html">Set it up</a>`;
-  else if (!ev && !bank && !pokeView() && !acctList().length) nw.innerHTML = `<div class="empty" style="padding:6px">Import a Rabobank statement and your investing data to see your net worth.</div>`;
+  else if (!ev && !bank && !pv && !acctList().length) nw.innerHTML = `<div class="empty" style="padding:6px">Import a Rabobank statement and your investing data to see your net worth.</div>`;
   else {
+    const vin = ev ? ev.live.Vinyl : 0;
     const parts = [];
-    if (bank) parts.push(['Rabobank', bank.cents/100, 'var(--c-bank)', `as of ${new Date(bank.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`]);
-    for (const a of acctList()) parts.push([a.name, acctBal(a), 'var(--c-acct)', 'from transfers']);
-    if (ev) for (const c of ['Stocks','Crypto','Silver','Vinyl']) if (ev.live[c]) parts.push([window.InvestCore.label(c), ev.live[c], CLS_COL[c], '']);
-    const pv = pokeView(); if (pv) parts.push(['Pokémon', pv.market, 'var(--c-pokemon)', 'market value']);
+    if (bank) parts.push(['Bank', bank.cents/100, 'var(--c-bank)']);
+    for (const a of acctList()) parts.push([a.name, acctBal(a), 'var(--c-acct)']);
+    if (ev) for (const c of ['Stocks','Crypto','Silver','Vinyl']) if (ev.live[c]) parts.push([window.InvestCore.label(c), ev.live[c], CLS_COL[c]]);
+    if (pv) parts.push(['Pokémon', pv.market, 'var(--c-pokemon)']);
     const total = parts.reduce((s,p)=>s+p[1],0), pos = parts.filter(p=>p[1]>0), posSum = pos.reduce((s,p)=>s+p[1],0) || 1;
-    nw.innerHTML = `<div class="tot num">${eurR(total)}</div>
+    const series = bank ? nwSeries(ev, pv) : [];
+    const tot = d => (d.bank||0) + (d.acct||0) + (d.inv ? Object.values(d.inv).reduce((a,b)=>a+b,0) : 0) + (d.pk||0);
+    const vals = series.map(tot), prev = vals.length > 1 ? vals[vals.length-2] : null, dlt = prev != null ? total - prev : null;
+    nw.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="tot num">${eurR(total)}</span><span class="chg num">${chgTxt(dlt, prev ? dlt/prev*100 : null, 'vs last month')}</span></div>
+      ${vals.length > 1 ? `<div class="spark">${spark([...vals.slice(0,-1), total], 'var(--accent)', 46)}</div>` : ''}
       <div class="stack">${pos.map(p=>`<i style="width:${p[1]/posSum*100}%;background:${p[2]}" title="${esc(p[0])}"></i>`).join('')}</div>
-      <div class="lines">${parts.map(p=>`<div class="ln"><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${p[2]};margin-right:6px"></i>${esc(p[0])}${p[3]?` <span style="font-size:11px;color:var(--muted)">${esc(p[3])}</span>`:''}</span><span class="num">${eurR(p[1])}</span></div>`).join('')}</div>
-      ${!bank ? '<div class="note" style="margin-top:8px">Import a Rabobank PDF to add your bank balance.</div>' : ''}${!ev ? '<div class="note" style="margin-top:8px">Add your investing data to include investments.</div>' : ''}
-      <button class="btn" id="acctOpen" style="margin-top:10px;width:100%">${acctList().length ? 'Savings settings' : '+ Add your savings'}</button>
-      ${bank ? drawNW(nwSeries(ev, pokeView())) : ''}`;
-    const ao = $('#acctOpen'); if (ao) ao.onclick = openAcct;
+      <div class="leg">${pos.map(p=>`<span><i style="background:${p[2]}"></i>${esc(p[0])} ${Math.round(p[1]/posSum*100)}%</span>`).join('')}</div>
+      ${series.length > 1 ? `<button class="more" id="nwMore">${nwShowBars ? 'Hide' : 'Show'} month by month ${nwShowBars ? '▴' : '▾'}</button>${nwShowBars ? drawNW(series) : ''}` : ''}`;
+    const nm = $('#nwMore'); if (nm) nm.onclick = () => { nwShowBars = !nwShowBars; renderHub(); };
   }
-  // investing KPIs
-  const ic = $('#invCard');
-  if (!ev) ic.innerHTML = HS && HS.missing ? '<div class="d">Tap to set up investing.</div>' : '<div class="d">Tap to bring over your Investing Dashboard.</div>';
-  else {
-    const p = HS.row.prices, pct = ev.prevTotal ? (ev.momAbs/ev.prevTotal*100).toFixed(1) : '0.0';
-    const gain = ev.liveTotal - ev.totalInvested;
-    ic.innerHTML = `<div class="row1"><span class="v num">${eurR(ev.liveTotal)}</span><span class="num ${ev.momAbs>=0?'pos2':'neg2'}" style="font-size:13px;font-weight:600">${signR(ev.momAbs)} (${pct}%)</span></div>
-      <div style="font-size:12px;color:var(--text-2)">since ${esc(ev.lastSnap||'')}</div>
-      <div class="kp"><div><div class="k">New money invested</div><div class="x num">${eurR(ev.totalInvested)}</div></div>
-        <div><div class="k">Market movement</div><div class="x num ${ev.totalGrowth>=0?'pos2':'neg2'}">${signR(ev.totalGrowth)}</div></div>
-        <div><div class="k">Biggest mover</div><div class="x">${esc(ev.best.n)} <span class="num" style="font-size:12px;font-weight:500">${signR(ev.best.v)}</span></div></div>
-        <div><div class="k">Value vs money in</div><div class="x num ${gain>=0?'pos2':'neg2'}">${signR(gain)}</div></div></div>
-      <div class="cl">${['Stocks','Crypto','Silver','Vinyl'].map(c=>{ const ch = ev.change[c]; return `<div><i style="background:${CLS_COL[c]}"></i>${window.InvestCore.label(c)}<div class="num" style="font-weight:600">${eurR(ev.live[c])}</div><div class="num" style="font-size:11px;font-weight:600;line-height:1.3;color:${ch.v>=0?'var(--good)':'var(--bad)'}">${signR(ch.v)}${ch.pct!=null?`<br>${ch.pct>=0?'+':'−'}${Math.abs(ch.pct).toFixed(1)}%`:''}</div></div>`; }).join('')}</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Change per asset since ${esc(ev.lastSnap||'')}, new money left out</div>
-      <div class="st" id="pxStatus">${esc(Hub.pxMsg || (p ? `Prices from ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}${p.complete?'':' · some missing'}` : 'No prices yet'))}</div>`;
+  // ---- alerts: only when something needs doing
+  const al = [], ms = missingStatement();
+  if (ms) al.push(['📄', `<b>${monthName(ms,{month:'long'})} statement</b> isn’t imported yet`, 'Import', () => $('#openImport').click()]);
+  const pr = HS && HS.row && HS.row.prices;
+  if (ev && pr && pr.complete === false) al.push(['⚠️', '<b>Some prices</b> couldn’t load today', 'Open', () => InvOverlay.open('investing.html')]);
+  if (pv && pv.syncedAt && Date.now() - pv.syncedAt > 21 * 864e5) al.push(['🃏', '<b>Pokémon stock</b> not synced for 3 weeks', '', null]);
+  $('#hubAlerts').classList.toggle('hidden', !al.length);
+  $('#hubAlerts').innerHTML = al.map(([ic, t, btn], i) => `<button class="halert" data-al="${i}">${ic}<span>${t}</span>${btn ? `<b>${btn} ›</b>` : ''}</button>`).join('');
+  $$('#hubAlerts [data-al]').forEach(b => b.onclick = () => { const f = al[+b.dataset.al][3]; if (f) f(); });
+  // ---- four tiles: the things that move
+  const tileHtml = [];
+  const tileOf = (name, col, val, ch, pct, line, key) => `<button class="card htile" data-tile="${key}"><div class="k"><i style="background:${col}"></i>${esc(name)}</div><div class="v num">${eurR(val)}</div><div class="c num">${ch == null ? '<span style="color:var(--muted)">—</span>' : `<span class="${ch>=0?'pos2':'neg2'}">${ch>=0?'+':'−'}${eurR(Math.abs(ch))}${pct!=null?` · ${pct>=0?'+':'−'}${Math.abs(pct).toFixed(1)}%`:''}</span>`}</div>${spark(line, col)}</button>`;
+  if (ev) {
+    for (const [c, key] of [['Crypto','crypto'],['Stocks','stocks']]) { const ch = ev.change[c]; tileHtml.push(tileOf(c, CLS_COL[c], ev.live[c], ch.v, ch.pct, ev.series.map(h => h[c] || 0), key)); }
   }
-  renderVinyl();
-  renderPokemon();
+  if (pv) { const ph = (HS.row.pokemon_prices && HS.row.pokemon_prices.history) || {}, hk = Object.keys(ph).sort(), last = hk.length ? ph[hk[hk.length-1]] : null;
+    tileHtml.push(tileOf('Pokémon', 'var(--c-pokemon)', pv.market, last != null ? pv.market - last : null, last ? (pv.market/last - 1) * 100 : null, [...hk.map(k => ph[k]), pv.market], 'pokemon')); }
+  if (ev && ev.live.Silver) { const ch = ev.change.Silver; tileHtml.push(tileOf('Metal', CLS_COL.Silver, ev.live.Silver, ch.v, ch.pct, ev.series.map(h => h.Silver || 0), 'metal')); }
+  $('#hubTiles').innerHTML = tileHtml.join('');
+  $$('#hubTiles [data-tile]').forEach(b => b.onclick = () => { const k = b.dataset.tile;
+    if (k === 'crypto') InvOverlay.open('investing.html', 'crypto'); else if (k === 'pokemon') { renderPokemon(); open('#sPk'); } else InvOverlay.open('investing.html'); });
+  // ---- the steady ones, as rows
+  const rows = [];
+  if (bank) rows.push(['bank', 'var(--c-bank)', 'Bank', `as of ${new Date(bank.date+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`, bank.cents/100]);
+  const a0 = acctList()[0];
+  rows.push(['sav', 'var(--c-acct)', a0 ? a0.name : 'Savings', a0 ? 'kept up to date from transfers' : 'tap to add your savings', a0 ? acctBal(a0) : null]);
+  if (ev && ev.live.Vinyl) { const S = window.VinylCore.summary(HS.row.vinyl); rows.push(['vinyl', 'var(--c-vinyl)', 'Vinyl', S && S.count ? `${S.count} records · Discogs` : 'Discogs collection', ev.live.Vinyl]); }
+  $('#hubRows').innerHTML = rows.map(([k, col, n, sub, v]) => `<button class="hrow" data-row="${k}"><i style="background:${col}"></i><span>${esc(n)}<small>${esc(sub)}</small></span><span class="num">${v == null ? '' : eurR(v)}</span><span class="ch">›</span></button>`).join('');
+  $$('#hubRows [data-row]').forEach(b => b.onclick = () => { const k = b.dataset.row;
+    if (k === 'bank') $('#openImport').click(); else if (k === 'sav') openAcct(); else if (k === 'vinyl') InvOverlay.open('vinyl.html'); });
+  // ---- settings sheet content
   $('#hubList').innerHTML = `
-    <div class="hubc"><span class="ic">💶</span><div><div class="n">Cash flow</div><div class="d">All-time net: <span class="num">${fmt(T.bal)}</span> · ${state.tx.size} transactions</div></div><span class="pill live">Live</span></div>
+    <div class="hubc"><span class="ic">💶</span><div><div class="n">Cash flow</div><div class="d">All-time net: <span class="num">${fmt(T.bal)}</span> · ${state.tx.size} transactions</div></div></div>
     <div class="hubc"><span class="ic">👤</span><div style="min-width:0"><div class="n">Account</div><div class="d" style="overflow:hidden;text-overflow:ellipsis">${esc(Store.user?.email||'')}</div><div class="d" style="font-size:11px;color:var(--muted)">App version ${APP_VERSION}</div></div>${DEMO ? '' : '<button class="btn" id="signOut" style="flex:0;padding:8px 12px">Sign out</button>'}</div>`;
+  const so = $('#signOut'); if (so) so.onclick = () => { if (so.dataset.armed!=='1') { so.dataset.armed='1'; so.textContent='Sure?'; return; } Store.signOut(); };
+}
+function bindPkRetry(){
   const pr = $('#pkRetry'); if (pr) pr.onclick = async () => { const HS = window.HubStore; if (!HS.row) return; pr.disabled = true; pr.textContent = 'Checking…'; try { localStorage.removeItem('fh-pk-attempt'); } catch(e){}
     HS.row = { ...HS.row, pokemon_prices: { ...(HS.row.pokemon_prices||{}), day: null, miss: {} } }; await Hub.maybePricePokemon(); };
-  const so = $('#signOut'); if (so) so.onclick = () => { if (so.dataset.armed!=='1') { so.dataset.armed='1'; so.textContent='Sure?'; return; } Store.signOut(); };
 }
 // keeps the Hub's investing numbers fresh: load the row, and fetch prices at most once a day
 const Hub = {
@@ -1181,11 +1255,11 @@ window.Hub = Hub;
 // ---------- investing screen, opened on top so the Hub keeps working underneath ----------
 const InvOverlay = {
   page: null,
-  open(page){
+  open(page, view){
     page = page || 'investing.html';
     const f = $('#invFrame');
-    if (this.page !== page) { this.page = page; f.src = page + '?embed=1' + (DEMO ? '&demo' : ''); }
-    else try { f.contentWindow.postMessage(page === 'vinyl.html' ? 'fh-vinyl-updated' : 'fh-refresh', location.origin); } catch(e){}
+    if (this.page !== page) { this.page = page; f.src = page + '?embed=1' + (DEMO ? '&demo' : '') + (view ? '&view=' + view : ''); }
+    else try { f.contentWindow.postMessage(page === 'vinyl.html' ? 'fh-vinyl-updated' : 'fh-refresh', location.origin); if (view) f.contentWindow.postMessage('fh-view-' + view, location.origin); } catch(e){}
     $('#invOverlay').classList.remove('hidden');
     if (!history.state || !history.state.inv) history.pushState({inv:true}, '');
   },
@@ -1304,7 +1378,9 @@ $('#delTx').onclick = async () => {
   document.addEventListener('click', e => { if (fired && e.target.closest('.cat[data-add]')) { e.stopPropagation(); e.preventDefault(); fired = false; } }, true);
   document.addEventListener('contextmenu', e => { if (e.target.closest('.cat[data-add]')) e.preventDefault(); });
 })();
-$('#fab').onclick = () => openEntry({type: state.view==='overview' ? state.ovType : 'expense'});
+$('#fab').onclick = () => open('#sPlus');
+$$('#sPlus [data-plus]').forEach(b => b.onclick = () => { const k = b.dataset.plus; $('#sPlus').classList.remove('open');
+  if (k === 'import') $('#openImport').click(); else openEntry({ type: k }); });
 document.addEventListener('click', e => {
   const a = e.target.closest('[data-add]'); if (a) return openEntry({cat:a.dataset.add, type:a.dataset.type});
   const cl = e.target.closest('[data-catlist]'); if (cl) return openCatTx(cl.dataset.catlist);
@@ -1517,7 +1593,9 @@ function paintImportRest(){
   $('#impGo').disabled = !on.length;
   $('#impGo').textContent = on.length ? `Import ${on.length}` : 'Import';
 }
-$('#openImport').onclick = () => { $('#impStep1').classList.remove('hidden'); $('#impStep2').classList.add('hidden'); $('#impFile').value=''; open('#sImp'); };
+$('#hubGear').onclick = () => open('#sSet');
+$('#setSav').onclick = () => { $('#sSet').classList.remove('open'); openAcct(); };
+$('#openImport').onclick = () => { $('#sSet').classList.remove('open'); $('#impStep1').classList.remove('hidden'); $('#impStep2').classList.add('hidden'); $('#impFile').value=''; open('#sImp'); };
 $('#impBack').onclick = () => { $('#impStep1').classList.remove('hidden'); $('#impStep2').classList.add('hidden'); $('#impFile').value=''; };
 $('#impFile').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;

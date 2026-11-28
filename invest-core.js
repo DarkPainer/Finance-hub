@@ -169,7 +169,9 @@ function toEur(price, ccy, rates){
 }
 
 /* ---- values, KPIs and chart series ---- */
-function evaluate(inv, d, prices, ov){
+// opts.only: the classes to count in totals and charts (the Investing screen leaves Vinyl out; live.Vinyl is still filled in)
+function evaluate(inv, d, prices, ov, opts){
+  const CL = (opts && opts.only) || CLASSES;
   ov = ov || {}; prices = prices || { cryptoEur:{}, quotes:{}, rates:{EUR:1}, xagUsd:null };
   const { cryptoEur = {}, quotes = {}, rates = {EUR:1}, xagUsd = null } = prices;
   const label = inv.cryptoLabel || {};
@@ -209,16 +211,16 @@ function evaluate(inv, d, prices, ov){
   if(d.SILVER_GRAMS) rows.push({ key:"silver", unit:"USD / troy oz", manual:sMan, cls:"Silver", name:`Silver bullion · ${d.SILVER_GRAMS} g`, qty:+oz.toFixed(3), px:spot, ccy:"USD/oz", val: silverEurOz != null ? silverTotal : null });
   const dv = prices.vinyl;   // Discogs collection value, when connected
   const vinylVal = typeof ov.vinyl === "number" ? ov.vinyl : (dv && dv.median != null ? dv.median : (inv.vinylEstimate || 0));
-  rows.push({ key:"vinyl", unit:"EUR total", manual:typeof ov.vinyl === "number", stale: !!(dv && dv.stale), cls:"Vinyl", name:"Vinyl collection", qty:"—", px:null, ccy:"", val:vinylVal,
+  if(CL.includes("Vinyl")) rows.push({ key:"vinyl", unit:"EUR total", manual:typeof ov.vinyl === "number", stale: !!(dv && dv.stale), cls:"Vinyl", name:"Vinyl collection", qty:"—", px:null, ccy:"", val:vinylVal,
     discogs: dv && typeof ov.vinyl !== "number" ? { min: dv.min, max: dv.max } : null });
   rows.sort((a,b) => (b.val ?? -1) - (a.val ?? -1));
 
   const live = { Crypto:cryptoTotal, Stocks:stockTotal, Silver:silverTotal, Vinyl:vinylVal };
-  const liveTotal = CLASSES.reduce((s,c) => s + live[c], 0);
+  const liveTotal = CL.reduce((s,c) => s + live[c], 0);
   const holdings = inv.holdings || [];
   const series = [...holdings, { date:fmtDay(new Date()) + " (live)", ...live }];
-  const totals = series.map(h => CLASSES.reduce((s,c) => s + (h[c]||0), 0));
-  const invTotal = m => CLASSES.reduce((s,c) => s + (m[c]||0), 0);
+  const totals = series.map(h => CL.reduce((s,c) => s + (h[c]||0), 0));
+  const invTotal = m => CL.reduce((s,c) => s + (m[c]||0), 0);
   const cum = []; d.invested.reduce((s,m) => { const t = s + invTotal(m); cum.push(t); return t; }, 0);
   const totalInvested = cum.length ? cum[cum.length-1] : 0;
   const prevTotal = totals.length > 1 ? totals[totals.length-2] : liveTotal;
@@ -239,19 +241,19 @@ function evaluate(inv, d, prices, ov){
   const totalGrowth = growth.reduce((a,b) => a+b, 0);
   // profit per class since the first snapshot: value change minus new money, added up month by month.
   // Starts at 0 on the first snapshot, because what was paid for holdings before tracking began is unknown.
-  const profit = Object.fromEntries([...CLASSES, "Total"].map(c => [c, series.length ? [0] : []]));
+  const profit = Object.fromEntries([...CL, "Total"].map(c => [c, series.length ? [0] : []]));
   for(let i = 1; i < series.length; i++){
     let add;
     if(i === series.length-1) add = sinceSnap;
     else { const dd = parseDate(series[i].date); add = investedByMonth[monthKey(new Date(dd.getFullYear(), dd.getMonth()-1, 1))] || {}; }
     let tot = 0;
-    for(const c of CLASSES){ const v = profit[c][i-1] + (series[i][c]||0) - (series[i-1][c]||0) - (add[c]||0); profit[c].push(v); tot += v; }
+    for(const c of CL){ const v = profit[c][i-1] + (series[i][c]||0) - (series[i-1][c]||0) - (add[c]||0); profit[c].push(v); tot += v; }
     profit.Total.push(tot);
   }
   let best = { n:"—", v:-Infinity };
   const lastH = holdings.length ? holdings[holdings.length-1] : {};
   const change = {};   // since the last month-start snapshot, new money left out
-  for(const c of CLASSES){ const dv = live[c] - (lastH[c]||0) - sinceSnap[c]; change[c] = { v: dv, pct: lastH[c] ? dv / lastH[c] * 100 : null, added: sinceSnap[c] }; if(dv > best.v) best = { n:classLabel(c), v:dv }; }
+  for(const c of CL){ const dv = live[c] - (lastH[c]||0) - sinceSnap[c]; change[c] = { v: dv, pct: lastH[c] ? dv / lastH[c] * 100 : null, added: sinceSnap[c] }; if(dv > best.v) best = { n:classLabel(c), v:dv }; }
   // per position: compare with the unit prices recorded at the first price run of this month
   const ps = inv.posSnap, nowMonth = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`; })();
   if(ps && ps.month === nowMonth && ps.units) for(const r of rows){

@@ -288,6 +288,8 @@ details summary::before{content:"▸ ";color:var(--muted)} details[open] summary
 (async () => {
 const $ = s => document.querySelector(s);
 const IC = window.InvestCore, HS = window.HubStore;
+// Vinyl has its own screen (from the Hub), so the Investing screen leaves it out
+const SHOWN = IC.CLASSES.filter(c => c !== 'Vinyl');
 const eur = v => '€' + Math.round(v).toLocaleString('nl-NL');
 const sign = v => (v >= 0 ? '+' : '−') + eur(Math.abs(v));
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -332,6 +334,7 @@ async function boot(){
   const fixed = IC.migrate(HS.row.investing);
   if (fixed) { try { await HS.save({ investing: fixed, prices: HS.row.prices ? { ...HS.row.prices, partial:true } : null }); } catch(e){} }
   show('main'); paint();
+  if (new URLSearchParams(location.search).get('view') === 'crypto') openCx(true);
   const p = HS.row.prices;
   let attempted = null; try { attempted = localStorage.getItem('fh-px-attempt'); } catch(e){}
   const hubBusy = window.parent !== window && parent.Hub && parent.Hub.running;
@@ -388,7 +391,7 @@ let charts = []; const openRows = new Set();
 document.addEventListener('toggle', e => { const d = e.target; if (d.classList && d.classList.contains('prow')) { if (d.open) openRows.add(d.dataset.k); else openRows.delete(d.dataset.k); } }, true);
 function paint(){
   const inv = HS.row.investing; D = IC.derive(inv, HS.row.ledger);
-  EV = IC.evaluate(inv, D, VinylCore.applyTo(HS.row.prices, HS.row.vinyl), HS.row.overrides);
+  EV = IC.evaluate(inv, D, VinylCore.applyTo(HS.row.prices, HS.row.vinyl), HS.row.overrides, { only: SHOWN });
   if (!LOG.length && HS.row.prices && HS.row.prices.log) LOG = HS.row.prices.log;
   const C = COLORS();
   $('#bigV').textContent = eur(EV.liveTotal);
@@ -400,7 +403,7 @@ function paint(){
     tile('New money invested', eur(EV.totalInvested), 'since ' + esc(EV.firstMonth)) +
     tile('Market movement', sign(EV.totalGrowth), 'value change excl. deposits', EV.totalGrowth>=0?'pos':'neg') +
     tile('Biggest mover', esc(EV.best.n), `${sign(EV.best.v)} since ${esc(EV.lastSnap||'')}`);
-  $('#classes').innerHTML = IC.CLASSES.map(c => { const ch = EV.change[c]; return `<div class="cls"><div class="k"><i style="background:${C[c]}"></i>${IC.label(c)}</div><div class="v num">${eur(EV.live[c])}</div><div class="num" style="font-size:11px;font-weight:600;color:${ch.v>=0?'var(--good)':'var(--bad)'}">${sign(ch.v)}${ch.pct!=null?`<br>${ch.pct>=0?'+':'−'}${Math.abs(ch.pct).toFixed(1)}%`:''}</div><div class="tag">${EV.liveTotal?(EV.live[c]/EV.liveTotal*100).toFixed(0):0}% of total</div></div>`; }).join('') + `<div class="tag" style="grid-column:1/-1;margin-top:2px">Change since ${esc(EV.lastSnap||'')}, new money left out.</div>`;
+  $('#classes').innerHTML = SHOWN.map(c => { const ch = EV.change[c]; return `<div class="cls"><div class="k"><i style="background:${C[c]}"></i>${IC.label(c)}</div><div class="v num">${eur(EV.live[c])}</div><div class="num" style="font-size:11px;font-weight:600;color:${ch.v>=0?'var(--good)':'var(--bad)'}">${sign(ch.v)}${ch.pct!=null?`<br>${ch.pct>=0?'+':'−'}${Math.abs(ch.pct).toFixed(1)}%`:''}</div><div class="tag">${EV.liveTotal?(EV.live[c]/EV.liveTotal*100).toFixed(0):0}% of total</div></div>`; }).join('') + `<div class="tag" style="grid-column:1/-1;margin-top:2px">Change since ${esc(EV.lastSnap||'')}, new money left out.</div>`;
   const w = [...new Set(EV.warnings)];
   banner(w.length ? w.map(x => '• ' + esc(x)).join('<br>') : '', 'warn');
 
@@ -460,22 +463,22 @@ function drawCharts(C){
     { label:'Portfolio value', data:EV.totals, borderColor:C.Stocks, backgroundColor:C.Stocks, borderWidth:2, pointRadius:3, tension:.3 },
     { label:'Cumulative invested', data:cumPad.slice(-labels.length), borderColor:css('--c-invested'), borderDash:[6,4], borderWidth:2, pointRadius:0, tension:.3 } ]}, options:base }));
   const leg = cls => cls.map(c => `<span><i style="background:${C[c]}"></i>${IC.label(c)}</span>`).join('');
-  $('#lgndA').innerHTML = leg(IC.CLASSES); $('#lgndB').innerHTML = leg(IC.CLASSES); $('#lgndC').innerHTML = leg(IC.CLASSES);
-  charts.push(new Chart($('#cAssets'), { type:'line', data:{ labels, datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:EV.series.map(h=>h[c]), borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })) }, options:base }));
+  $('#lgndA').innerHTML = leg(SHOWN); $('#lgndB').innerHTML = leg(SHOWN); $('#lgndC').innerHTML = leg(SHOWN);
+  charts.push(new Chart($('#cAssets'), { type:'line', data:{ labels, datasets: SHOWN.map(c => ({ label:IC.label(c), data:EV.series.map(h=>h[c]), borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })) }, options:base }));
   { const first = EV.series.length ? EV.series[0].date : '';
     $('#profNote').textContent = `Gain or loss since your first snapshot (${first}): change in value minus the new money you put in. Holdings bought before then start at €0, because their purchase price isn't known.`;
-    $('#lgndP').innerHTML = leg(IC.CLASSES) + `<span><i style="background:var(--text-2)"></i>Total</span>`;
+    $('#lgndP').innerHTML = leg(SHOWN) + `<span><i style="background:var(--text-2)"></i>Total</span>`;
     const zero = { id:'zero', beforeDatasetsDraw(ch){ const y = ch.scales.y.getPixelForValue(0), a = ch.chartArea; if (y < a.top || y > a.bottom) return; const g = ch.ctx; g.save(); g.strokeStyle = css('--muted'); g.lineWidth = 1; g.beginPath(); g.moveTo(a.left, y); g.lineTo(a.right, y); g.stroke(); g.restore(); } };
     charts.push(new Chart($('#cProfit'), { type:'line', plugins:[zero], data:{ labels, datasets: [
-      ...IC.CLASSES.map(c => ({ label:IC.label(c), data:EV.profit[c], borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })),
+      ...SHOWN.map(c => ({ label:IC.label(c), data:EV.profit[c], borderColor:C[c], backgroundColor:C[c], borderWidth:2, pointRadius:2, tension:.3 })),
       { label:'Total', data:EV.profit.Total, borderColor:css('--text-2'), backgroundColor:css('--text-2'), borderDash:[6,4], borderWidth:2, pointRadius:0, tension:.3 } ] }, options:base })); }
-  charts.push(new Chart($('#cAlloc'), { type:'doughnut', data:{ labels:IC.CLASSES.map(IC.label), datasets:[{ data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderColor:css('--surface'), borderWidth:2 }] },
+  charts.push(new Chart($('#cAlloc'), { type:'doughnut', data:{ labels:SHOWN.map(IC.label), datasets:[{ data:SHOWN.map(c=>EV.live[c]), backgroundColor:SHOWN.map(c=>C[c]), borderColor:css('--surface'), borderWidth:2 }] },
     options:{ maintainAspectRatio:false, animation:false, cutout:'62%', plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c => ` ${c.label}: ${eur(c.parsed)} (${(c.parsed/EV.liveTotal*100).toFixed(1)}%)` } } } } }));
-  charts.push(new Chart($('#cInvested'), { type:'bar', data:{ labels:D.invested.map(m=>m.month.replace(' 20',' ’')), datasets: IC.CLASSES.map(c => ({ label:IC.label(c), data:D.invested.map(m=>m[c]||0), backgroundColor:C[c], borderColor:css('--surface'), borderWidth:{top:2}, borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom' })) },
+  charts.push(new Chart($('#cInvested'), { type:'bar', data:{ labels:D.invested.map(m=>m.month.replace(' 20',' ’')), datasets: SHOWN.map(c => ({ label:IC.label(c), data:D.invested.map(m=>m[c]||0), backgroundColor:C[c], borderColor:css('--surface'), borderWidth:{top:2}, borderRadius:{topLeft:4,topRight:4}, borderSkipped:'bottom' })) },
     options:{ ...base, scales:{ x:{ stacked:true, offset:true, grid:{display:false}, ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:6} }, y:{ stacked:true, ticks:eurTick, grid:{color:grid} } } } }));
-  charts.push(new Chart($('#cCompare'), { type:'bar', data:{ labels:IC.CLASSES.map(IC.label), datasets:[
-    { label:'Invested since Jan', data:IC.CLASSES.map(c=>D.invested.reduce((s,m)=>s+(m[c]||0),0)), backgroundColor:css('--c-invested'), borderRadius:4 },
-    { label:'Value today', data:IC.CLASSES.map(c=>EV.live[c]), backgroundColor:IC.CLASSES.map(c=>C[c]), borderRadius:4 } ] }, options:bars }));
+  charts.push(new Chart($('#cCompare'), { type:'bar', data:{ labels:SHOWN.map(IC.label), datasets:[
+    { label:'Invested since Jan', data:SHOWN.map(c=>D.invested.reduce((s,m)=>s+(m[c]||0),0)), backgroundColor:css('--c-invested'), borderRadius:4 },
+    { label:'Value today', data:SHOWN.map(c=>EV.live[c]), backgroundColor:SHOWN.map(c=>C[c]), borderRadius:4 } ] }, options:bars }));
   paintCxEntry(); paintPlEntry(); if (!$('#cxView').classList.contains('hidden')) paintCx(true); if (!$('#plView').classList.contains('hidden') && !plBusy) plPaint();
   charts.push(new Chart($('#cGrowth'), { type:'bar', data:{ labels:EV.glabels.map(s=>s.replace(' (live)',' · now')), datasets:[{ label:'Market gain/loss', data:EV.growth, backgroundColor:EV.growth.map(v=>v>=0?css('--good'):css('--bad')), borderRadius:4 }] }, options:bars }));
 }
@@ -655,10 +658,11 @@ function paintCxEntry(){
   const coins = cxCoins(); $('#cxOpen').classList.toggle('hidden', !coins.length);
   const n = (HS.row.investing.buys || []).length; $('#cxEntrySub').textContent = `${coins.map(cxLabel).join(' · ')}${n ? ` · ${n} trades` : ''}`;
 }
-function openCx(){ $('#cxView').classList.remove('hidden'); document.body.style.overflow = 'hidden'; history.pushState({ cx: 1 }, ''); paintCx(); }
-function closeCx(fromPop){ if ($('#cxView').classList.contains('hidden')) return; $('#cxView').classList.add('hidden'); $('#cxSheet').classList.add('hidden'); document.body.style.overflow = ''; if (!fromPop && history.state && history.state.cx) history.back(); paintCxEntry(); }
+let cxFromHub = false;   // opened straight from the Hub's Crypto tile: back goes back to the Hub
+function openCx(fromHub){ cxFromHub = !!fromHub && window.parent !== window; $('#cxView').classList.remove('hidden'); document.body.style.overflow = 'hidden'; if (!cxFromHub) history.pushState({ cx: 1 }, ''); paintCx(); }
+function closeCx(fromPop){ if ($('#cxView').classList.contains('hidden')) return; if (cxFromHub && !fromPop) { cxFromHub = false; parent.postMessage('fh-close-invest', location.origin); setTimeout(() => closeCx(true), 400); return; } $('#cxView').classList.add('hidden'); $('#cxSheet').classList.add('hidden'); document.body.style.overflow = ''; if (!fromPop && history.state && history.state.cx) history.back(); paintCxEntry(); }
 window.addEventListener('popstate', () => closeCx(true));
-$('#cxOpen').onclick = openCx; $('#cxBack').onclick = () => closeCx();
+$('#cxOpen').onclick = () => openCx(false); $('#cxBack').onclick = () => closeCx();
 $('#cxCoins').addEventListener('click', e => { const b = e.target.closest('[data-cx]'); if (b) { cxCoin = b.dataset.cx; paintCx(); } });
 $('#cxRange').addEventListener('click', e => { const b = e.target.closest('[data-cr]'); if (b) { cxRange = b.dataset.cr; if (cxRange === 'All' && cxTf === 'D') cxTf = 'W'; paintCx(); } });
 $('#cxTf').addEventListener('click', e => { const b = e.target.closest('[data-tf]'); if (b) { cxTf = b.dataset.tf; paintCx(); } });
@@ -776,6 +780,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => HS
 const EMBED = window.parent !== window;
 if (EMBED) {
   $('#backHub').addEventListener('click', e => { e.preventDefault(); parent.postMessage('fh-close-invest', location.origin); });
+  window.addEventListener('message', e => { if (e.origin === location.origin && e.data === 'fh-view-crypto') openCx(true); });
   window.addEventListener('message', async e => { if (e.origin !== location.origin || e.data !== 'fh-refresh') return; try { await HS.load(); } catch(err){} if (HS.hasInvesting()) { show('main'); paint(); const p = HS.row.prices; if (p && !(parent.Hub && parent.Hub.running)) status(`Prices from ${new Date(p.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`); } });
 }
 boot();
